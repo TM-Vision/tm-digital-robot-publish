@@ -4,3 +4,5 @@ from simple import Simple
 
 test = Simple()
 print(test.add(1, 32))
+print(test.y)
+
