@@ -1,0 +1,578 @@
+/******************************************************************************
+ *	 Copyright 2023 NVIDIA Corporation. All rights reserved.	 *
+ ******************************************************************************
+
+Permission is hereby granted by NVIDIA Corporation ("NVIDIA"), free of charge,
+to any person obtaining a copy of the sample definition code that uses our
+Material Definition Language (the "MDL Materials"), to reproduce and distribute
+the MDL Materials, including without limitation the rights to use, copy, merge,
+publish, distribute, and sell modified and unmodified copies of the MDL
+Materials, and to permit persons to whom the MDL Materials is furnished to do
+so, in all cases solely for use with NVIDIA's Material Definition Language,
+subject to the following further conditions:
+
+1. The above copyright notices, this list of conditions, and the disclaimer
+that follows shall be retained in all copies of one or more of the MDL
+Materials, including in any software with which the MDL Materials are bundled,
+redistributed, and/or sold, and included either as stand-alone text files,
+human-readable headers or in the appropriate machine-readable metadata fields
+within text or binary files as long as those fields can be easily viewed by the
+user, as applicable.
+2. The name of NVIDIA shall not be used to promote, endorse or advertise any
+Modified Version without specific prior written permission, except a) to comply
+ with the notice requirements otherwise contained herein; or b) to acknowledge
+the contribution(s) of NVIDIA.
+
+THE MDL MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF COPYRIGHT, PATENT,
+TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR
+ANY CLAIM, DAMAGES OR OTHER LIABILITY, INCLUDING ANY GENERAL, SPECIAL,
+INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, WHEXTER IN AN ACTION OF
+CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF THE USE OR INABILITY TO USE
+THE MDL MATERIALS OR FROM OTHER DEALINGS IN THE MDL MATERIALS.
+*/
+
+
+mdl 1.6;
+
+import ::anno::*;
+import ::base::*;
+import ::df::*;
+import ::math::*;
+import ::state::*;
+import ::tex::*;
+import ::nvidia::core_definitions::blend_colors;
+import ::nvidia::core_definitions::dimension;
+
+const string COPYRIGHT =
+" Copyright 2023 NVIDIA Corporation. All rights reserved.\n"
+" MDL MATERIALS ARE PROVIDED PURSUANT TO AN END USER LICENSE  AGREEMENT,\n"
+" WHICH WAS ACCEPTED IN ORDER TO GAIN ACCESS TO THIS FILE.  IN PARTICULAR,\n"
+" THE MDL MATERIALS ARE PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\n"
+" EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF\n"
+" MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF\n"
+" COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL NVIDIA\n"
+" CORPORATION BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, INCLUDING ANY\n"
+" GENERAL, SPECIAL,  INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, WHEXTER IN\n"
+" AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF THE USE OR\n"
+" INABILITY TO USE THE MDL MATERIALS OR FROM OTHER DEALINGS IN THE MDL MATERIALS.\n";
+
+const string DESCRIPTION = "A polished brass material with tweakable surface imperfections";
+
+
+annotation preview_scale( float f);
+
+// Returns the normal n in tangent space, given n is in internal space.
+float3 transform_internal_to_tangent(float3 n)
+[[
+	anno::hidden()
+]]
+{
+	return
+		n.x* float3(state::texture_tangent_u(0).x,state::texture_tangent_v(0).x,state::normal().x)+
+		n.y* float3(state::texture_tangent_u(0).y,state::texture_tangent_v(0).y,state::normal().y)+
+		n.z* float3(state::texture_tangent_u(0).z,state::texture_tangent_v(0).z,state::normal().z);
+}
+
+// Returns the normal n in internal space, given n is in tangent space.
+float3 transform_tangent_to_internal(float3 n)
+[[
+	anno::hidden()
+]]
+{
+	return  state::texture_tangent_u(0) * n.x +
+			state::texture_tangent_v(0) * n.y +
+			state::normal() * n.z ;
+}
+
+
+
+// Returns a normal by adding a detail normal to a global normal.
+// If detail blending of two normal maps gives visual artifacts, check if texture_2d are loaded
+// correctly with tex::gamma_linear
+float3 add_detail_normal(float3 nd = state::normal(), float3 n = state::normal())
+{
+	// http://blog.selfshadow.com/publications/blending-in-detail/
+	float3 n_t = transform_internal_to_tangent(n);
+	float3 nd_t = transform_internal_to_tangent(nd);
+
+	n_t=n_t + float3(0.,0.,1.);
+	nd_t = nd_t *  float3(-1.,-1.,1.);
+	n = n_t*math::dot(n_t, nd_t)/n_t.z - nd_t;
+	return ::math::normalize(transform_tangent_to_internal(n));
+}
+
+
+float histogram_range(float input, float range = 1.0f, float position = 0.5f)
+{
+	float low = ::math::clamp(1.0 - ::math::min(((1.0 - position) + range * 0.5), (1.0 - position) * 2), 0.0, 1.0);
+	float high = ::math::clamp(math::min((position + range * 0.5 ), position * 2.0), 0.0, 1.0);
+	return ::math::lerp(low, high, input);
+}
+
+
+float remap(float input, float low, float high)
+{
+	return ::math::lerp(low, high, input);
+}
+
+::base::texture_coordinate_info vmat_transform_post_scale(
+	::base::texture_coordinate_info uvw,
+	float2 scale = float2(1.0f)
+)
+{
+	return ::base::texture_coordinate_info(
+		position: float3(uvw.position.x / scale.x,
+						uvw.position.y / scale.y,
+						uvw.position.z),
+		tangent_u: uvw.tangent_u,
+		tangent_v: uvw.tangent_v
+	);
+}
+
+::base::anisotropy_return anisotropy_conversion(
+	float roughness = 0.0,
+	float anisotropy = 0.0,
+	float anisotropy_rotation = 0.0,
+	float3 tangent_u = ::state::texture_tangent_u(0)
+)
+{
+	::base::anisotropy_return return_value(
+		roughness_u: roughness * roughness,
+		roughness_v: roughness * roughness,
+		tangent_u: tangent_u
+	);
+
+	if (anisotropy > 0.f) {
+		// Allows for infinite anisotropy when roughness==0, full roughness when anisotropy==0 (saturated later on)
+		return_value.roughness_u += ::math::pow(anisotropy,4);
+
+		if (anisotropy_rotation > 0.f && anisotropy_rotation < 1.f) {
+			float3 tangent_v = ::math::cross(::state::normal(), tangent_u);		 // assumed these are normalized already
+			float rotation_angle = 2.f * ::math::PI * anisotropy_rotation;
+			return_value.tangent_u = tangent_u * ::math::cos(rotation_angle) - tangent_v * ::math::sin(rotation_angle);
+		}
+	}
+
+	return_value.roughness_u = ::math::min(1.f, return_value.roughness_u);
+	return_value.roughness_v = ::math::min(1.f, return_value.roughness_v);
+
+	return return_value;
+}
+
+
+::base::texture_coordinate_info vmat_transform(
+								uniform float2 translation = float2(0.0, 0.0),
+								uniform float rotation	 = 0.0,
+								uniform float2 scaling	 = float2(1.0, 1.0),
+								uniform ::base::texture_coordinate_system system = ::base::texture_coordinate_uvw,
+								uniform int uv_space	   = 0
+)
+{
+	float4x4 scale =
+	float4x4(1.0 /scaling.x, 0.			 ,  0. ,	 0.,
+			 0.			, 1.0 /scaling.y ,  0. ,	 0.,
+			 0.			, 0.			 ,  1.0,	 0.,
+			 translation.x , translation.y  ,  0.0,	 1.);
+
+	float s = ::math::sin(rotation);
+	float c = ::math::cos(rotation);
+	float4x4 rotate =
+	float4x4(  c  ,  -s   , 0.0 , 0.0,
+			   s  ,   c   , 0.0 , 0.0,
+			   0.0,   0.0 , 1.0 , 0.0,
+			   0. ,   0.0 , 0.0 , 1.);
+
+	return ::base::transform_coordinate(scale*rotate, ::base::coordinate_source(system, uv_space));
+}
+
+float remap_xy_to_0_1(float input, float x, float y)
+{
+	return (input - x)/(y - x);
+}
+
+float histogram_scan_big(float input, float width, float position)
+{
+	return ::math::clamp(
+				remap_xy_to_0_1(input,
+					::math::lerp(-width, 1.0, position),
+					::math::lerp(0.0, 1.0 + width, position)),
+				0.0,
+				1.0);
+}
+
+float histogram_pos_range(float input, float range, float position)
+{
+	float range_half = range/2.0;
+	float add_high = (position - range_half) < 0.0 ? ::math::abs(position - range_half) : 0.0;
+	float subtract_low = (position + range_half) > 1.0 ? ::math::abs((position + range_half)-1.0) : 0.0;
+
+
+	float low = (position - range_half) < 0.0 ? 0.0 : (position - range_half - subtract_low);
+	float high = (position + range_half) > 1.0 ? 1.0 : (position + range_half + add_high);
+	return remap(input, low, high);
+}
+
+export material Carbon_Fiber(
+	float carbon_fiber_brightness = 0.22f [[
+		::anno::description("Adjusts the brightness of the material"),
+		::anno::display_name("Brightness"),
+		::anno::hard_range(0.f, 1.f),
+		::anno::ui_order(0)
+	]],
+	float fibers_roughness = 0.16f [[
+		::anno::description("Afjusts the roughness of the fibers"),
+		::anno::display_name("Fibers Roughness"),
+		::anno::in_group("Appearance", "Fibers"),
+		::anno::hard_range(0.f, 1.f),
+		::anno::ui_order(1)
+	]],
+	float fibers_anisotropy = 0.18f [[
+		::anno::description("Adjusts the anisotropy of the fibers. Higher values stretches the reflection of the fibers"),
+		::anno::display_name("Fibers Anisotropy"),
+		::anno::in_group("Appearance", "Fibers"),
+		::anno::hard_range(0.f, 1.f),
+		::anno::ui_order(2)
+	]],
+	uniform float weaving_bump_strength = 1.f [[
+		::anno::description("Adjusts the bumpiness of the weaving pattern"),
+		::anno::display_name("Weaving Bump Strength"),
+		::anno::in_group("Appearance", "Fibers"),
+		::anno::hard_range(0.f, 2.f),
+		::anno::soft_range(0.f, 1.f),
+		::anno::ui_order(3)
+	]],
+	uniform bool enable_coating = false [[
+		::anno::description("When enables, a a transparent coating is applied on top of the carbon fiber"),
+		::anno::display_name("Enable Coating"),
+		::anno::in_group("Coating"),
+		::anno::ui_order(4)
+	]],
+	float coating_roughness = 0.f [[
+		::anno::description("Adjusts the roughness of the coating. Higher values lead to blurrier reflections"),
+		::anno::display_name("Coating Roughness"),
+		::anno::in_group("Coating"),
+		::anno::hard_range(0.f, 1.f),
+		::anno::ui_order(5)
+	]],
+	float coating_roughness_variation = 0.36f [[
+		::anno::description("This parameter adds variation to the roughness so that it appears less uniform"),
+		::anno::display_name("Coating Roughness Variation"),
+		::anno::in_group("Coating"),
+		::anno::hard_range(0.f, 1.f),
+		::anno::ui_order(6)
+	]],
+	uniform float coating_damages_intensity = 0.02f [[
+		::anno::description("Adds scratches and wear on the coating"),
+		::anno::display_name("Coating Damages"),
+		::anno::in_group("Coating"),
+		::anno::hard_range(0.f, 1.f),
+		::anno::ui_order(7)
+	]],
+	float coating_damages_scale = .75f [[
+		::anno::description("Use this parameter to make the damages bigger or smaller, relative to the overall texture scale."),
+		::anno::display_name("Damages Scale"),
+		::anno::in_group("Coating"),
+		::anno::hard_range(0.f, 1.f),
+		::anno::ui_order(8)
+	]],
+	float coating_dust = 0.23f [[
+		::anno::description("Adds a thin layer of dust which makes the surface a bit more matte when applied"),
+		::anno::display_name("Coating Dust"),
+		::anno::in_group("Coating"),
+		::anno::hard_range(0.f, 1.f),
+		::anno::ui_order(9)
+	]],
+	uniform float2 texture_translate = float2(0.f) [[
+		::anno::description("Controls the position of the texture."),
+		::anno::display_name("Texture Translate"),
+		::anno::in_group("Transform"),
+		::anno::ui_order(10)
+	]],
+	uniform float texture_rotate = 0.f [[
+		::anno::description("Rotates angle of the texture in degrees."),
+		::anno::display_name("Texture Rotate"),
+		::anno::in_group("Transform"),
+		::anno::soft_range(0.f, 360.f),
+		::anno::ui_order(11)
+	]],
+	uniform float2 texture_scale = float2(1.f) [[
+		::anno::description("Larger numbers increase the size."),
+		::anno::display_name("Texture Scale"),
+		::anno::in_group("Transform"),
+		::nvidia::core_definitions::dimension(float2(.60f, .60f)),
+		::preview_scale(2.5f),
+		::anno::ui_order(12)
+	]],
+	uniform bool roundcorners_enable = false [[
+		::anno::description("Enables the round corner effect. Comes at a slight performance cost as additional raytracing calls are rquired to evaluate the round corner effect"),
+		::anno::display_name("Enable Round Corners"),
+		::anno::in_group("Round Corners"),
+		::anno::ui_order(13)
+	]],
+	uniform float roundcorners_radius_mm = 1.5f [[
+		::anno::description("Radius of the rounded corners in millimeters"),
+		::anno::display_name("Round Corner Radius (mm)"),
+		::anno::in_group("Round Corners"),
+		::anno::soft_range(0.f, 10.f),
+		::anno::ui_order(14)
+	]],
+	uniform bool roundcorners_across_materials = false [[
+		::anno::description("Applies the round corner effect across different materials when enabled."),
+		::anno::display_name("Across Materials"),
+		::anno::in_group("Round Corners"),
+		::anno::ui_order(15)
+	]],
+	uniform int uv_space_index = 0 [[
+		::anno::description("Uses selected UV space for material"),
+		::anno::display_name("UV Space Index"),
+		::anno::in_group("Advanced"),
+		::anno::ui_order(16)
+	]])
+[[
+	::anno::author("NVIDIA vMaterials"),
+	::anno::contributor("Rüdiger Raab"),
+	::anno::contributor("Maik Rohland"),
+	::anno::display_name("Carbon Fiber - Shiny Uncoated"),
+	::anno::description(DESCRIPTION),
+	::anno::copyright_notice(COPYRIGHT),
+	::anno::thumbnail("./.thumbs/Carbon_Fiber.Carbon_Fiber.png"),
+	::anno::key_words(string[]("fabric", "composite", "woven", "new", "bumped", "design", "automotive", "black", "dark", "neutral"))
+]]
+ =
+	let {
+		bool tmp0 = false;
+		material_surface tmp1(enable_coating ? ::df::custom_curve_layer(0.0399999991f, 1.f, 5.f, 1.f, ::df::microfacet_ggx_smith_bsdf((float3(::base::file_texture(texture_2d("./textures/surface_damages_multi_R_rough_B_rough2.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(coating_damages_scale * 8.f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).y * coating_dust + ::math::max(::math::lerp(::math::lerp(0.f, 0.300000012f, coating_roughness), coating_roughness * ::base::file_texture(texture_2d("./textures/generic_surface_rough.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_average, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(coating_damages_scale * 8.f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).mono, histogram_range(coating_roughness_variation, 0.229999989f, 0.300000012f)), float3(::base::file_texture(texture_2d("./textures/surface_damages_multi_R_rough_B_rough2.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(coating_damages_scale * 8.f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x * coating_damages_intensity)) * (float3(::base::file_texture(texture_2d("./textures/surface_damages_multi_R_rough_B_rough2.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(coating_damages_scale * 8.f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).y * coating_dust + ::math::max(::math::lerp(::math::lerp(0.f, 0.300000012f, coating_roughness), coating_roughness * ::base::file_texture(texture_2d("./textures/generic_surface_rough.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_average, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(coating_damages_scale * 8.f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).mono, histogram_range(coating_roughness_variation, 0.229999989f, 0.300000012f)), float3(::base::file_texture(texture_2d("./textures/surface_damages_multi_R_rough_B_rough2.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(coating_damages_scale * 8.f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x * coating_damages_intensity)), (float3(::base::file_texture(texture_2d("./textures/surface_damages_multi_R_rough_B_rough2.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(coating_damages_scale * 8.f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).y * coating_dust + ::math::max(::math::lerp(::math::lerp(0.f, 0.300000012f, coating_roughness), coating_roughness * ::base::file_texture(texture_2d("../textures/generic_surface_rough.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_average, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(coating_damages_scale * 8.f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).mono, histogram_range(coating_roughness_variation, 0.229999989f, 0.300000012f)), float3(::base::file_texture(texture_2d("./textures/surface_damages_multi_R_rough_B_rough2.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(coating_damages_scale * 8.f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x * coating_damages_intensity)) * (float3(::base::file_texture(texture_2d("../textures/surface_damages_multi_R_rough_B_rough2.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(coating_damages_scale * 8.f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).y * coating_dust + ::math::max(::math::lerp(::math::lerp(0.f, 0.300000012f, coating_roughness), coating_roughness * ::base::file_texture(texture_2d("../textures/generic_surface_rough_1.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_average, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(coating_damages_scale * 8.f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).mono, histogram_range(coating_roughness_variation, 0.229999989f, 0.300000012f)), float3(::base::file_texture(texture_2d("../textures/surface_damages_multi_R_rough_B_rough2_1.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(coating_damages_scale * 8.f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x * coating_damages_intensity)), color(1.f, 1.f, 1.f), color(0.f, 0.f, 0.f), ::state::texture_tangent_u(0), ::df::scatter_reflect), ::df::weighted_layer(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).y, ::df::weighted_layer(0.0700000003f, ::df::diffuse_transmission_bsdf(color(::math::pow(histogram_scan_big(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x, 0.48999998f, 0.560000002f), 2.20000005f))), ::df::custom_curve_layer(carbon_fiber_brightness * 0.300000012f + 0.0199999996f, 1.f, 5.f, 1.f, ::df::microfacet_ggx_smith_bsdf(anisotropy_conversion(histogram_range(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x, 0.769999981f, ::math::lerp(0.300000012f, 0.550000012f, fibers_roughness)), histogram_range(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x, 0.789999962f, ::math::lerp(0.599999964f, 0.75f, fibers_anisotropy)), texture_rotate / 360.f + float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).z * 0.25f, ::state::texture_tangent_u(0)).roughness_u, anisotropy_conversion(histogram_range(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x, 0.769999981f, ::math::lerp(0.300000012f, 0.550000012f, fibers_roughness)), histogram_range(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x, 0.789999962f, ::math::lerp(0.599999964f, 0.75f, fibers_anisotropy)), texture_rotate / 360.f + float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).z * 0.25f, ::state::texture_tangent_u(0)).roughness_v, color(1.f, 1.f, 1.f), color(0.737910986f, 0.737910986f, 0.737910986f), anisotropy_conversion(histogram_range(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x, 0.769999981f, ::math::lerp(0.300000012f, 0.550000012f, fibers_roughness)), histogram_range(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x, 0.789999962f, ::math::lerp(0.599999964f, 0.75f, fibers_anisotropy)), texture_rotate / 360.f + float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).z * 0.25f, ::state::texture_tangent_u(0)).tangent_u, ::df::scatter_reflect), ::df::weighted_layer(0.219999999f, ::df::diffuse_reflection_bsdf(color(::math::pow(histogram_pos_range(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x, 0.469999999f, 0.149999991f), 2.20000005f)), 0.f), bsdf(), ::state::normal()), add_detail_normal(::base::tangent_space_normal_texture(texture_2d("./textures/carbon_fiber_fibers_norm.jpg", ::tex::gamma_linear), 1.f, false, false, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 1.f, 0.f, 0.f, int2(0), ::tex::wrap_repeat, 30.f), ::base::tangent_space_normal_texture(texture_2d("./textures/carbon_fiber_weaving_norm.png", ::tex::gamma_linear), weaving_bump_strength, false, false, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.25f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 1.f, 0.f, 0.f, int2(0), ::tex::wrap_repeat, 30.f))), add_detail_normal(::base::tangent_space_normal_texture(texture_2d("./textures/carbon_fiber_fibers_norm.jpg", ::tex::gamma_linear), 1.f, false, false, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 1.f, 0.f, 0.f, int2(0), ::tex::wrap_repeat, 30.f), ::base::tangent_space_normal_texture(texture_2d("./textures/carbon_fiber_weaving_norm.png", ::tex::gamma_linear), weaving_bump_strength, false, false, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.25f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 1.f, 0.f, 0.f, int2(0), ::tex::wrap_repeat, 30.f))), ::df::specular_bsdf(color(1.f, 1.f, 1.f), ::df::scatter_transmit), ::state::normal()), ::base::tangent_space_normal_texture(texture_2d("../textures/surface_damages_norm.jpg", ::tex::gamma_linear), coating_damages_intensity * 0.5f, false, false, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(coating_damages_scale * 8.f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 1.f, 0.f, 0.f, int2(0), ::tex::wrap_repeat, 30.f)) : ::df::weighted_layer(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).y, ::df::weighted_layer(0.0700000003f, ::df::diffuse_transmission_bsdf(color(::math::pow(histogram_scan_big(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x, 0.48999998f, 0.560000002f), 2.20000005f))), ::df::custom_curve_layer(carbon_fiber_brightness * 0.300000012f + 0.0199999996f, 1.f, 5.f, 1.f, ::df::microfacet_ggx_smith_bsdf(anisotropy_conversion(histogram_range(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x, 0.769999981f, ::math::lerp(0.300000012f, 0.550000012f, fibers_roughness)), histogram_range(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x, 0.789999962f, ::math::lerp(0.599999964f, 0.75f, fibers_anisotropy)), texture_rotate / 360.f + float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).z * 0.25f, ::state::texture_tangent_u(0)).roughness_u, anisotropy_conversion(histogram_range(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x, 0.769999981f, ::math::lerp(0.300000012f, 0.550000012f, fibers_roughness)), histogram_range(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x, 0.789999962f, ::math::lerp(0.599999964f, 0.75f, fibers_anisotropy)), texture_rotate / 360.f + float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).z * 0.25f, ::state::texture_tangent_u(0)).roughness_v, color(1.f, 1.f, 1.f), color(0.737910986f, 0.737910986f, 0.737910986f), anisotropy_conversion(histogram_range(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x, 0.769999981f, ::math::lerp(0.300000012f, 0.550000012f, fibers_roughness)), histogram_range(float3(::base::file_texture(texture_2d("./textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x, 0.789999962f, ::math::lerp(0.599999964f, 0.75f, fibers_anisotropy)), texture_rotate / 360.f + float3(::base::file_texture(texture_2d("../textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).z * 0.25f, ::state::texture_tangent_u(0)).tangent_u, ::df::scatter_reflect), ::df::weighted_layer(0.219999999f, ::df::diffuse_reflection_bsdf(color(::math::pow(histogram_pos_range(float3(::base::file_texture(texture_2d("../textures/carbon_fiber_multi_R_rough_G_cutout_B_patternA_1.jpg", ::tex::gamma_linear), color(0.f, 0.f, 0.f), color(1.f, 1.f, 1.f), ::base::mono_alpha, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 0.f, int2(0), ::tex::wrap_repeat, 30.f).tint).x, 0.469999999f, 0.149999991f), 2.20000005f)), 0.f), bsdf(), ::state::normal()), add_detail_normal(::base::tangent_space_normal_texture(texture_2d("../textures/carbon_fiber_fibers_norm.jpg", ::tex::gamma_linear), 1.f, false, false, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 1.f, 0.f, 0.f, int2(0), ::tex::wrap_repeat, 30.f), ::base::tangent_space_normal_texture(texture_2d("../textures/carbon_fiber_weaving_norm.png", ::tex::gamma_linear), weaving_bump_strength, false, false, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.25f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 1.f, 0.f, 0.f, int2(0), ::tex::wrap_repeat, 30.f))), add_detail_normal(::base::tangent_space_normal_texture(texture_2d("../textures/carbon_fiber_fibers_norm_1.jpg", ::tex::gamma_linear), 1.f, false, false, vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 1.f, 0.f, 0.f, int2(0), ::tex::wrap_repeat, 30.f), ::base::tangent_space_normal_texture(texture_2d("../textures/carbon_fiber_weaving_norm_1.png", ::tex::gamma_linear), weaving_bump_strength, false, false, vmat_transform_post_scale(vmat_transform(texture_translate, texture_rotate, texture_scale * 0.075000003f, ::base::texture_coordinate_uvw, uv_space_index), float2(0.25f)), float2(0.f, 1.f), float2(0.f, 1.f), ::tex::wrap_repeat, ::tex::wrap_repeat, false, 1.f, 0.f, 0.f, int2(0), ::tex::wrap_repeat, 30.f))), ::df::specular_bsdf(color(1.f, 1.f, 1.f), ::df::scatter_transmit), ::state::normal()), material_emission(emission: edf(), intensity: color(0.f, 0.f, 0.f), mode: intensity_radiant_exitance));
+		material_surface tmp2 = material_surface(scattering: bsdf(), emission: material_emission(emission: edf(), intensity: color(0.f, 0.f, 0.f), mode: intensity_radiant_exitance));
+		color tmp3 = color(1.f, 1.f, 1.f);
+		material_volume tmp4 = material_volume(scattering: vdf(), absorption_coefficient: color(0.f, 0.f, 0.f), scattering_coefficient: color(0.f, 0.f, 0.f));
+		material_geometry tmp5(float3(0.f), 1.f, roundcorners_enable ? ::state::rounded_corner_normal(roundcorners_radius_mm * 0.00100000005f, true, float(roundcorners_across_materials)) : ::state::normal());
+	} in
+		material(
+			thin_walled: tmp0,
+			surface: tmp1,
+			backface: tmp2,
+			ior: tmp3,
+			volume: tmp4,
+			geometry: tmp5,
+			hair: hair_bsdf());
+
+// 2
+export material Carbon_Fiber_Matte_Uncoated(*)
+[[
+	::anno::author("NVIDIA vMaterials"),
+	::anno::contributor("Rüdiger Raab"),
+	::anno::contributor("Maik Rohland"),
+	::anno::display_name("Carbon Fiber - Matte Uncoated"),
+	::anno::description(DESCRIPTION),
+	::anno::copyright_notice(COPYRIGHT),
+	::anno::thumbnail("./.thumbs/Carbon_Fiber.Carbon_Fiber_Matte_Uncoated.png"),
+	::anno::key_words(string[]("fabric", "composite", "woven", "new", "matte", "bumped", "design", "automotive", "black", "dark", "neutral"))
+]] = Carbon_Fiber(
+	carbon_fiber_brightness:		0.22f,
+	fibers_roughness:				0.75f,
+	fibers_anisotropy:				0.18f,
+	weaving_bump_strength:			1.0f,
+	enable_coating:					false,
+	coating_roughness:				0.0f,
+	coating_roughness_variation:	0.36f,
+	coating_damages_intensity:		0.0f,
+	coating_damages_scale:			1.00f,
+	coating_dust:					0.23f,
+	texture_translate:				float2(0.0f),
+	texture_rotate:					0.0f,
+	texture_scale:					float2(1.0f),
+	roundcorners_enable:			false,
+	roundcorners_radius_mm:			1.5f,
+	roundcorners_across_materials:	false,
+	uv_space_index:					0
+);
+
+// 3
+export material Carbon_Fiber_Shiny_Coating(*)
+[[
+	::anno::author("NVIDIA vMaterials"),
+	::anno::contributor("Rüdiger Raab"),
+	::anno::contributor("Maik Rohland"),
+	::anno::display_name("Carbon Fiber - Shiny Coating"),
+	::anno::description(DESCRIPTION),
+	::anno::copyright_notice(COPYRIGHT),
+	::anno::thumbnail("./.thumbs/Carbon_Fiber.Carbon_Fiber_Shiny_Coating.png"),
+	::anno::key_words(string[]("fabric", "composite", "woven", "new", "coated", "smooth", "design", "automotive", "coated", "black", "dark", "neutral"))
+]] = Carbon_Fiber(
+	carbon_fiber_brightness:		0.22f,
+	fibers_roughness:				0.41f,
+	fibers_anisotropy:				0.22f,
+	weaving_bump_strength:			1.0f,
+	enable_coating:					true,
+	coating_roughness:				0.0f,
+	coating_roughness_variation:	0.36f,
+	coating_damages_intensity:		0.0f,
+	coating_damages_scale:			1.00f,
+	coating_dust:					0.15f,
+	texture_translate:				float2(0.0f),
+	texture_rotate:					0.0f,
+	texture_scale:					float2(1.0f),
+	roundcorners_enable:			false,
+	roundcorners_radius_mm:			1.5f,
+	roundcorners_across_materials:	false,
+	uv_space_index:					0
+);
+
+
+// 4
+export material Carbon_Fiber_Worn_Coating(*)
+[[
+	::anno::author("NVIDIA vMaterials"),
+	::anno::contributor("Rüdiger Raab"),
+	::anno::contributor("Maik Rohland"),
+	::anno::display_name("Carbon Fiber - Worn Coating"),
+	::anno::description(DESCRIPTION),
+	::anno::copyright_notice(COPYRIGHT),
+	::anno::thumbnail("./.thumbs/Carbon_Fiber.Carbon_Fiber_Worn_Coating.png"),
+	::anno::key_words(string[]("fabric", "composite", "woven", "worn", "used", "old", "scratched", "shiny", "bumped", "design", "automotive", "coated", "black", "dark", "neutral"))
+]] = Carbon_Fiber(
+	carbon_fiber_brightness:		0.22f,
+	fibers_roughness:				0.41f,
+	fibers_anisotropy:				0.18f,
+	weaving_bump_strength:			1.0f,
+	enable_coating:					true,
+	coating_roughness:				0.0f,
+	coating_roughness_variation:	0.96f,
+	coating_damages_intensity:		0.97f,
+	coating_damages_scale:			1.00f,
+	coating_dust:					0.73f,
+	texture_translate:				float2(0.0f),
+	texture_rotate:					0.0f,
+	texture_scale:					float2(1.0f),
+	roundcorners_enable:			false,
+	roundcorners_radius_mm:			1.5f,
+	roundcorners_across_materials:	false,
+	uv_space_index:					0
+);
+
+// 5
+export material Carbon_Fiber_Matte_Coating(*)
+[[
+	::anno::author("NVIDIA vMaterials"),
+	::anno::contributor("Rüdiger Raab"),
+	::anno::contributor("Maik Rohland"),
+	::anno::display_name("Carbon Fiber - Matte Coating"),
+	::anno::description(DESCRIPTION),
+	::anno::copyright_notice(COPYRIGHT),
+	::anno::thumbnail("./.thumbs/Carbon_Fiber.Carbon_Fiber_Matte_Coating.png"),
+	::anno::key_words(string[]("fabric", "composite", "woven", "new", "matte", "design", "automotive", "coated", "black", "dark", "neutral"))
+]] = Carbon_Fiber(
+	carbon_fiber_brightness:		0.22f,
+	fibers_roughness:				0.41f,
+	fibers_anisotropy:				0.18f,
+	weaving_bump_strength:			1.0f,
+	enable_coating:					true,
+	coating_roughness:				0.74f,
+	coating_roughness_variation:	0.36f,
+	coating_damages_intensity:		0.0f,
+	coating_damages_scale:			1.0f,
+	coating_dust:					0.23f,
+	texture_translate:				float2(0.0f),
+	texture_rotate:					0.0f,
+	texture_scale:					float2(1.0f),
+	roundcorners_enable:			false,
+	roundcorners_radius_mm:			1.5f,
+	roundcorners_across_materials:	false,
+	uv_space_index:					0
+);
+
+//6
+export material Carbon_Fiber_Dusty_Coating(*)
+[[
+	::anno::author("NVIDIA vMaterials"),
+	::anno::contributor("Rüdiger Raab"),
+	::anno::contributor("Maik Rohland"),
+	::anno::display_name("Carbon Fiber - Dusty Coating"),
+	::anno::description(DESCRIPTION),
+	::anno::copyright_notice(COPYRIGHT),
+	::anno::thumbnail("./.thumbs/Carbon_Fiber.Carbon_Fiber_Dusty_Coating.png"),
+	::anno::key_words(string[]("fabric", "composite", "woven", "shiny", "bumped", "design", "automotive", "coated", "black", "dark", "neutral"))
+]] = Carbon_Fiber(
+	carbon_fiber_brightness:		0.22f,
+	fibers_roughness:				0.41f,
+	fibers_anisotropy:				0.18f,
+	weaving_bump_strength:			1.0f,
+	enable_coating:					true,
+	coating_roughness:				0.08f,
+	coating_roughness_variation:	0.5f,
+	coating_damages_intensity:		0.12f,
+	coating_damages_scale:			0.65f,
+	coating_dust:					1.0f,
+	texture_translate:				float2(0.0f),
+	texture_rotate:					0.0f,
+	texture_scale:					float2(1.0f),
+	roundcorners_enable:			false,
+	roundcorners_radius_mm:			1.5f,
+	roundcorners_across_materials:	false,
+	uv_space_index:					0
+);
+
+//7
+export material Carbon_Fiber_Aluminized(*)
+[[
+	::anno::author("NVIDIA vMaterials"),
+	::anno::contributor("Rüdiger Raab"),
+	::anno::contributor("Maik Rohland"),
+	::anno::display_name("Carbon Fiber - Aluminized"),
+	::anno::description(DESCRIPTION),
+	::anno::copyright_notice(COPYRIGHT),
+	::anno::thumbnail("./.thumbs/Carbon_Fiber.Carbon_Fiber_Aluminized.png"),
+	::anno::key_words(string[]("fabric", "composite", "woven", "shiny", "bumped", "design", "automotive", "aluminum", "gray", "neutral"))
+]] = Carbon_Fiber(
+	carbon_fiber_brightness:		0.58f,
+	fibers_roughness:				0.41f,
+	fibers_anisotropy:				0.18f,
+	weaving_bump_strength:			1.3f,
+	enable_coating:					false,
+	coating_roughness:				0.08f,
+	coating_roughness_variation:	0.5f,
+	coating_damages_intensity:		0.08f,
+	coating_damages_scale:			0.65f,
+	coating_dust:					0.05f,
+	texture_translate:				float2(0.0f),
+	texture_rotate:					0.0f,
+	texture_scale:					float2(1.0f),
+	roundcorners_enable:			false,
+	roundcorners_radius_mm:			1.5f,
+	roundcorners_across_materials:	false,
+	uv_space_index:					0
+);
+
+
+//8
+export material Carbon_Fiber_Aluminized_Coated(*)
+[[
+	::anno::author("NVIDIA vMaterials"),
+	::anno::contributor("Rüdiger Raab"),
+	::anno::contributor("Maik Rohland"),
+	::anno::display_name("Carbon Fiber - Aluminized Coated"),
+	::anno::description(DESCRIPTION),
+	::anno::copyright_notice(COPYRIGHT),
+	::anno::thumbnail("./.thumbs/Carbon_Fiber.Carbon_Fiber_Aluminized_Coated.png"),
+	::anno::key_words(string[]("fabric", "composite", "woven", "shiny", "bumped", "design", "automotive", "aluminum", "coated", "gray", "neutral"))
+]] = Carbon_Fiber(
+	carbon_fiber_brightness:		0.58f,
+	fibers_roughness:				0.41f,
+	fibers_anisotropy:				0.18f,
+	weaving_bump_strength:			1.3f,
+	enable_coating:					true,
+	coating_roughness:				0.08f,
+	coating_roughness_variation:	0.5f,
+	coating_damages_intensity:		0.08f,
+	coating_damages_scale:			0.65f,
+	coating_dust:					0.05f,
+	texture_translate:				float2(0.0f),
+	texture_rotate:					0.0f,
+	texture_scale:					float2(1.0f),
+	roundcorners_enable:			false,
+	roundcorners_radius_mm:			1.5f,
+	roundcorners_across_materials:	false,
+	uv_space_index:					0
+);
