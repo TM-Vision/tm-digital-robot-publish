@@ -44,12 +44,11 @@ icon = "data/icon.png"
 name = "tmrobot.digital_robot"
 
 # https://docs.omniverse.nvidia.com/kit/docs/omni.kit.pipapi/latest/Overview.html
-[python.pipapi]
-requirements = ["python-dotenv==1.0.1", "grpcio==1.68.1","grpcio-tools", "protobuf", "numpy", "python-dotenv"]
-use_online_index = true
-ignore_import_check = false
-extra_args = ["--no-cache-dir"]
-modules = ["dotenv", "google.protobuf"]
+# [python.pipapi]
+# requirements = ["grpcio==1.68.1","grpcio-tools", "protobuf", "numpy", "python-dotenv"]
+# use_online_index = true
+# ignore_import_check = false
+# extra_args = ["--no-cache-dir"]
 
 
 [settings]

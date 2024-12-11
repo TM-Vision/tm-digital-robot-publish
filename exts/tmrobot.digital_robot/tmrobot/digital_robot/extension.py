@@ -19,7 +19,6 @@ from typing import List
 
 import carb
 import numpy as np
-import omni.ext
 import omni.kit.commands
 import omni.kit.viewport.utility as vp_utils
 import omni.usd
@@ -53,7 +52,6 @@ logger = logging.getLogger(__name__)
 # Get the active viewport
 viewport = vp_utils.get_active_viewport()
 # viewport.set_texture_resolution((1920, 1080))
-viewport.set_texture_resolution((1280, 720))
 
 
 class TmrobotDigital_robotExtension(omni.ext.IExt):
@@ -83,13 +81,13 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
         self._gripper_state = 0
         self._gripper = None
         self._workpiece_id = 0
-        self._world_settings = {
-            "physics_dt": 1.0 / 60.0,
-            "rendering_dt": 1.0 / 60.0,
-            "stage_units_in_meters": 1.0,
-        }
-        self._world: World = World(**self._world_settings)
-        # self._world: World = World()
+        # self._world_settings = {
+        #     "physics_dt": 1.0 / 60.0,
+        #     "rendering_dt": 1.0 / 60.0,
+        #     "stage_units_in_meters": 1.0,
+        # }
+        # self._world: World = World(**self._world_settings)
+        self._world: World = World()
         self._default_workpiece_position = Gf.Vec3d(0, 0.25, 0.5155)
         self._default_workpieces_prim_path = "/World/Accessories/Workpieces"
         # fmt: on
@@ -150,10 +148,15 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
         return
 
     def _on_start_service(self):
+        if not self._ext_ui.validate_form(self._world):
+            return
+
         self.initialize()
         self._ext_ui.change_action_mode(const.BUTTON_STOP_SERVICE)
-        self._ext_ui.enabled_robot_settings(False)
+        self._ext_ui.update_message("Services started")
+        self._ext_ui.collapsed_robot_settings(False)
         self._ext_ui._on_save_scene()
+
         audio = omni.usd.audio.get_stage_audio_interface()
         audio._get_invalid_streamer_id()
         audio.stop_all_sounds()
@@ -168,7 +171,7 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
             self._world.stage.RemovePrim(self._default_workpieces_prim_path)
 
         self._robot_settings = self._get_activated_robots_setting()
-        # Check if TMFlow services are available
+        # Check if TMSimulator services are available
         for setting in self._robot_settings:
             self._console(f"Add Robot {setting.name} to the scene")
 
@@ -177,21 +180,24 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
                 self._ext_ui.change_action_mode(const.BUTTON_START_SERVICE)
                 return
 
-            # Check if the status of TMflow Virtual Camera API is Activated
+            # Check if the status of TMSimulator Virtual Camera API is Activated
             echo_client = EchoClient(setting.ip)
             if not echo_client.connectTMFlow():
-                logger.error(
-                    f"Can't connect to {setting.name} TMFlow at {setting.ip}, "
-                    "please check if the status of TMflow Virtual Camera API is Activated"
+                error_message = (
+                    f"Can't connect to {setting.name} TMSimulator at IP: {setting.ip}, "
+                    "please check if the status of TMSimulator Virtual Camera API is enabled"
                 )
+                logger.error(error_message)
+                self._ext_ui.update_message(error_message)
                 self._ext_ui.change_action_mode(const.BUTTON_START_SERVICE)
+                self._ext_ui.collapsed_robot_settings(True)
                 return
 
-            # Check if the status of TMflow Ethernet Slave is Activated
+            # Check if the status of TMSimulator Ethernet Slave is Activated
             if not self._is_service_on(setting.ip, const.PORT_ETHERNET):
                 logger.error(
                     f"Can't connect to {setting.name} Ethernet at {setting.ip}:{const.PORT_ETHERNET}, "
-                    "please check if the status of TMflow Ethernet Slave is Activated"
+                    "please check if the status of TMSimulator Ethernet Slave is Activated"
                 )
                 self._ext_ui.change_action_mode(const.BUTTON_START_SERVICE)
                 return
@@ -220,17 +226,15 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
                 self._ext_ui.change_action_mode(const.BUTTON_START_SERVICE)
                 return
 
-            # Create Gripper
-            if self._is_prim_exist(self._default_workpieces_prim_path):
-                self._world.stage.RemovePrim(
-                    Sdf.Path(self._default_workpieces_prim_path)
-                )
-                omni.kit.commands.execute(
-                    "DeletePrims",
-                    paths=[self._default_workpieces_prim_path],
-                    destructive=False,
-                )
+            # Delete existing workpieces
+            if self._world.stage.GetPrimAtPath(
+                Sdf.Path(self._default_workpieces_prim_path)
+            ).IsValid():
+                # Known issue: Get warning message below when remove prim
+                # ... delegate.cpp -- Failed verification: ' prim '
+                self._world.stage.RemovePrim(self._default_workpieces_prim_path)
 
+            # Create new workpiece
             omni.kit.commands.execute(
                 "CreatePrimWithDefaultXform",
                 prim_type="Xform",
@@ -248,8 +252,8 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
                 sgp.offset.p.z = 0.337
                 sgp.offset.r = [0.7071, 0, 0.7071, 0]
                 sgp.gripThreshold = 0.005
-                sgp.forceLimit = 1.0e2
-                sgp.torqueLimit = 1.0e3
+                sgp.forceLimit = 1.0e3
+                sgp.torqueLimit = 1.0e4
                 sgp.bendAngle = np.pi / 4
                 sgp.stiffness = 1.0e4
                 sgp.damping = 1.0e3
@@ -300,6 +304,7 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
         asyncio.ensure_future(_ethernet_master_async())
         asyncio.ensure_future(_play_world_async())
         omni.kit.commands.execute("SelectNone")
+
         self._ext_ui.change_action_mode(const.BUTTON_STOP_SERVICE)
 
     def _on_simulation_step(self, step_size):
@@ -317,12 +322,11 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
                     self._gripper_state = motion.ctrl_do[0]
                     if self._gripper_state == 1:
                         self._gripper.close()
-                        self._console("Gripper Close")
+                        self._console("Gripper suck")
 
                     if self._gripper_state == 0:
                         self._gripper.open()
-                        self._console("Gripper Open")
-
+                        self._console("Gripper release")
                         self._spawn_workpiece()
 
             # === Uncomment the code below to test the digital input and output ===
@@ -333,13 +337,6 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
             #     else:
             #         self._ethernet_masters[motion.robot_name].set_ctrl_di(3, 0)
             #         self._ethernet_masters[motion.robot_name].set_end_di(3, 0)
-
-            # === Uncomment the code below to show the FPS ===
-            # self._simulation_count += 1
-            # self._fps_accumulated += viewport.fps
-            # avg_fps = "{:.2f}".format(self._fps_accumulated / self._simulation_count)
-            # if self._simulation_count % 100 == 0:
-            #     self._console(f"Avg. FPS: {avg_fps} - {self._simulation_count}")
 
             # === Uncomment the code below to trace FPS ===
             # self._receive_count[motion.robot_name] = motion.receive_count
@@ -357,7 +354,8 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
     def _on_stop_service(self):
         async def _on_stop_service_async():
             self._ext_ui.change_action_mode(const.BUTTON_DISABLE_ALL)
-            self._ext_ui.enabled_robot_settings(True)
+            self._ext_ui.update_message("Services stopping...")
+            self._ext_ui.collapsed_robot_settings(True)
 
             await self._world.stop_async()
 
@@ -382,12 +380,7 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
             self._stop_all_async_functions()
             self._ext_ui.change_action_mode(const.BUTTON_START_SERVICE)
             self._console("Services stopped")
-
-            print(
-                self._world.stage.GetPrimAtPath(
-                    Sdf.Path(self._default_workpieces_prim_path)
-                ).IsValid()
-            )
+            self._ext_ui.update_message("Services stopped")
 
         asyncio.ensure_future(_on_stop_service_async())
 
@@ -435,10 +428,15 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
         return prim.IsValid()
 
     def _spawn_workpiece(self):
+        # if not self._world.stage.GetPrimAtPath(
+        #     Sdf.Path(self._default_workpieces_prim_path)
+        # ).IsValid():
+        #     return
 
         workpieces_prim = self._world.stage.GetPrimAtPath(
-            Sdf.Path("/World/Accessories/Workpieces")
+            Sdf.Path(self._default_workpieces_prim_path)
         )
+
         spawn_position = self._default_workpiece_position
         for workpiece in workpieces_prim.GetChildren():
             path: str = workpiece.GetPath()
@@ -448,16 +446,13 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
             wp_translation = wp_transform.ExtractTranslation()
             x = round(wp_translation[0], 2)
             y = round(wp_translation[1], 2)
-            # print(f"Workpiece {workpiece.GetName()} is at {wp_translation}")
-            # print(f"Workpiece {x, y} is at {wp_translation}")
             if spawn_position[0] == x and spawn_position[1] == y:
-                # print(f"Workpiece {workpiece.GetName()} is at the spawn position")
                 return
 
         self._workpiece_id += 1
-        # fmt: off
-        workpiece_prim_path = f"/World/Accessories/Workpieces/workpiece_{self._workpiece_id}"
-        # fmt: on
+        workpiece_prim_path = (
+            f"{self._default_workpieces_prim_path}/workpiece_{self._workpiece_id}"
+        )
 
         absolute_path = f"{const.EXTENSION_ROOT_PATH}/assets/worlds/accessories/workpiece/004_sugar_box/004_sugar_box.usd"  # noqa
 
@@ -466,24 +461,10 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
             prim_path=workpiece_prim_path,
         )
 
-        # workpiece = self._world.stage.GetPrimAtPath(Sdf.Path(workpiece_prim_path))
-
         workpiece_xform = UsdGeom.XformCommonAPI(UsdGeom.Xformable(workpiece_prim))
-        # workpiece_xform = UsdGeom.Xformable(workpiece_prim)
         workpiece_xform.SetTranslate(self._default_workpiece_position)
         workpiece_xform.SetScale((0.5, 0.5, 0.5))
         workpiece_xform.SetRotate(Gf.Vec3f(0, 0, random.uniform(0, 360)))
-
-        # Can be removed
-        # self._world.scene.add(
-        #     XFormPrim(
-        #         prim_path=workpiece_prim_path,
-        #         name=f"workpiece_{self._workpiece_id}",
-        #     )
-        # )
-
-        # isValidPathString = Sdf.Path.IsValidPathString(workpiece_prim_path)
-        # print(isValidPathString)
 
         # Known issue: Get warning message below when set rigid body
         # path.cpp -- Ill-formed SdfPath <>: syntax error
