@@ -1,0 +1,11 @@
+{
+    "version": "1.0",
+    "file_records": [
+        {
+            "source_url": "omniverse://localhost/NVIDIA/Assets/Isaac/4.2/Isaac/Props/YCB/Axis_Aligned/Materials/Textures/004_sugar_box_COLOR.png",
+            "source_hash": "4d8a75068362055e45f4839c5e2663ec3dc432c5",
+            "target_url": "./SubUSDs/textures/004_sugar_box_COLOR.png",
+            "target_hash": "c4ed93ab7701431f5012f825045aa8bd22cd966a"
+        }
+    ]
+}
