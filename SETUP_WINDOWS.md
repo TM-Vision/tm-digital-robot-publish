@@ -10,12 +10,11 @@ cd %USERPROFILE%\projects\tm-digital-robot-publish
 ```
 
 -   Please checkout the latest or specific version and then create new branch for your custom development
--   For example, if you want to use version 2.21.1, you can use the command below
+-   Checkout the latest version, you can use the command below
 
 ```bash
-git checkout v2.21.2
-git branch v2.21.2_custom
-git checkout v2.21.2_custom
+git branch v2.22.1_custom
+git checkout v2.22.1_custom
 ```
 
 ## Make sure you have Python 3.10 installed
