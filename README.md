@@ -75,26 +75,39 @@ TM Digital Robot Extension is a robot simulation tool that allow developers cont
 
     ![](images/20241220093552.png)
 
-### Setup Communication
+### Import Sample Project and Ethernet Configuration
+
+##### Please find the sample project from folder **tmflow_sample_project** and import them by following guide
+
+-   Copy folder **TM_Export** to a USB named TMROBOT
+-   Insert the USB to the PC where TMSimulator is running
+-   Click gear icon -> System -> Import/Export on left menu, the Import/Export window will appear, then click Import
+
+    ![](images/20241220163741.png)
+
+-   Select TMFLOW01 from Robot List, then click Select
+
+    ![](images/20241220163539.png)
+
+-   Click Import -> Project -> Whole Project then click digital_robot_motion_v7.zip
+
+    ![](images/20241220162307.png)
+
+-   Click Import -> Configuration -> Ethernet Slave then click Transmit/digital_robot_motion
+
+    ![](images/20241220164105.png)
+
+-   Finally, make sure the project and EthSlave are selected in the right side of the window and click Import
+
+    ![](images/20241220164141.png)
+
+### Enable Ethernet Slave Communication
 
 -   Click gear icon -> Configuration -> Communication on left menu, then Communication window will appear
 
--   Click Ethernet Slave tab, then toggle Status as Disable
+-   Tick Write Permission and toggle Status to Enable
 
-    ![](images/20241211135513.png)
-
--   Config Data Table
-
-    -   Step 1. Select Joint_Angle, Ctrl_DI, Ctrl_DO, End_DI, End_DO to the right side of the window, **(IMPORTANT)the sequence of the selected items MUST be the same as the below image**
-
-    -   Step 2. Set Communication Mode as STRING
-    -   Step 3. Save the Transmit File Name as digital_robot
-
-        ![](images/20241211135713.png)
-
-    -   Step 4. Go back the Communication window, tick Write Permission and toggle Status to Enable
-
-        ![](images/20241211150426.png)
+    ![](images/20241211150426.png)
 
 ### Enable Virtual Camera API
 

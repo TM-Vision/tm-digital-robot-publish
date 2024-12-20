@@ -235,7 +235,7 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
             #     sgp.forceLimit = 1.0e6
             #     sgp.torqueLimit = 1.0e7
             #     sgp.bendAngle = np.pi / 4
-            #     sgp.stiffness = 1.0e2
+            #     sgp.stiffness = 1.0e8
             #     sgp.damping = 1.0e1
             #     sgp.retryClose = True
             #     self._gripper = Surface_Gripper()
@@ -264,16 +264,34 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
         # Create a ethernet master threads for updating robot motion from ethernet slave
         async def _ethernet_master_async():
 
+            robot_models_are_different = []
+
             for robot in self._robot_settings:
                 self._ethernet_masters[robot.name] = EthernetMaster(
                     robot.name, robot.ip
                 )
+
+                actual_robot_model = self._ethernet_masters[
+                    robot.name
+                ].get_robot_model()
+
+                self._console(
+                    f"{robot.name}({robot.model}) is connect to {robot.ip}({actual_robot_model})"
+                )
+                if actual_robot_model != robot.model:
+                    robot_models_are_different.append(
+                        f"{robot.name}: model {robot.model} is different from {actual_robot_model} you connected"
+                    )
+
                 self._ethernet_master_threads[robot.name] = threading.Thread(
                     target=self._ethernet_masters[robot.name].receive_data,
                     args=(self._motion_queue,),
                 )
 
                 self._ethernet_master_threads[robot.name].start()
+
+            if len(robot_models_are_different) > 0:
+                self._ext_ui.update_message("\n".join(robot_models_are_different))
 
         # Create Virtual Camera gRPC Server
         self._virtual_camera_server = VirtualCameraServer(
