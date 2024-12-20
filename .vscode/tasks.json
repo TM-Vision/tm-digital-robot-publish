@@ -6,7 +6,7 @@
         {
             "label": "ubuntu - git push",
             "type": "shell",
-            "command": "git add --all && git commit -m 'build for ubuntu' && git push",
+            "command": "git add --all && git commit -m 'build for ubuntu' && git pull && git push",
             "problemMatcher": []
         }
     ]
