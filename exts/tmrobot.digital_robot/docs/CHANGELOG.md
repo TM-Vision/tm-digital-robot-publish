@@ -1,7 +1,3 @@
 # Changelog
 
-<!-- The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). -->
-
-## [2.22.1] - 2024-12-13
-
--   Initial version of TM Digital Robot Extension
+-   Please refer to the [Release Notes]([RELEASE_NOTE.md](https://github.com/TM-Vision/tm-digital-robot-publish/blob/main/RELEASE_NOTE.md)) for the details.
