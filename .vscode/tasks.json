@@ -8,6 +8,12 @@
             "type": "shell",
             "command": "git add --all && git commit -m 'build for ubuntu' && git pull && git push",
             "problemMatcher": []
+        },
+        {
+            "label": "windows - git push",
+            "type": "shell",
+            "command": "git add --all & git commit -m \"build for windows\" & git pull & git push",
+            "problemMatcher": []
         }
     ]
 }
