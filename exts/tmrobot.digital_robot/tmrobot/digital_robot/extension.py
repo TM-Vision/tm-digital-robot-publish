@@ -163,12 +163,6 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
         for setting in self._robot_settings:
             self._console(f"Add Robot {setting.name} to the scene")
 
-            # To be removed
-            # if setting.ip == "":
-            #     logger.error(f"Robot {setting.name} does not have an IP address")
-            #     self._ext_ui.change_action_mode(const.BUTTON_START_SERVICE)
-            #     return
-
             # Check if the status of TMSimulator Virtual Camera API is Activated
             echo_client = EchoClient(setting.ip)
             if not echo_client.connectTMFlow():
