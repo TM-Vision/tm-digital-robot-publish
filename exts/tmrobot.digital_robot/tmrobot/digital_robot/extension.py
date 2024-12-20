@@ -1,11 +1,3 @@
-####################################################################################################################
-# TECHMAN ROBOT INC. ("Techman") CONFIDENTIAL                                                                      #
-# Copyright (C) 2016~2025 Techman. All Rights Reserved.                                                            #
-# This source code and any compilation or derivative thereof is proprietary and confidential to Techman.           #
-# Under no circumstances may any portion of the source code or any modified version of the source code be          #
-# distributed, disclosed, or otherwise made available to any third party without the express written consent of    #
-# Techman.                                                                                                         #
-####################################################################################################################
 import asyncio
 import gc
 import logging
@@ -17,7 +9,7 @@ import traceback
 from datetime import datetime, timezone
 from typing import List
 
-import carb
+import carb  # noqa
 import numpy as np  # noqa
 import omni.kit.commands
 import omni.kit.viewport.utility as vp_utils
@@ -56,13 +48,12 @@ from tmrobot.digital_robot.ui.extension_ui import ExtensionUI  # type: ignore
 logger = logging.getLogger(__name__)
 
 viewport = vp_utils.get_active_viewport()
-# viewport.set_texture_resolution((1920, 1080))
 
 
 class TmrobotDigital_robotExtension(omni.ext.IExt):
     def initialize(self):
         # fmt: off
-        carb.settings.get_settings().set("/rtx/pathtracing/maxSamplesPerLaunch", 892778)
+        # carb.settings.get_settings().set("/rtx/pathtracing/maxSamplesPerLaunch", 892778)
         self._console(f"DEVELOPER_MODE: {const.DEVELOPER_MODE}")
         self._extension_setting = ExtensionSetting()
         self._models = {}
@@ -85,12 +76,6 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
         self._gripper_state = 0
         self._gripper = None
         self._workpiece_id = 0
-        # self._world_settings = {
-        #     "physics_dt": 1.0 / 60.0,
-        #     "rendering_dt": 1.0 / 60.0,
-        #     "stage_units_in_meters": 1.0,
-        # }
-        # self._world: World = World(**self._world_settings)
         self._world: World = World()
         self._default_workpiece_position = Gf.Vec3d(0, 0.25, 0.5155)
         self._default_workpieces_prim_path = "/World/Accessories/Workpieces"
@@ -162,7 +147,6 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
         self._ext_ui._on_save_scene()
 
         audio = omni.usd.audio.get_stage_audio_interface()
-        audio._get_invalid_streamer_id()
         audio.stop_all_sounds()
 
         self._simulation_count = 0
@@ -179,10 +163,11 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
         for setting in self._robot_settings:
             self._console(f"Add Robot {setting.name} to the scene")
 
-            if setting.ip == "":
-                logger.error(f"Robot {setting.name} does not have an IP address")
-                self._ext_ui.change_action_mode(const.BUTTON_START_SERVICE)
-                return
+            # To be removed
+            # if setting.ip == "":
+            #     logger.error(f"Robot {setting.name} does not have an IP address")
+            #     self._ext_ui.change_action_mode(const.BUTTON_START_SERVICE)
+            #     return
 
             # Check if the status of TMSimulator Virtual Camera API is Activated
             echo_client = EchoClient(setting.ip)
@@ -216,10 +201,7 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
                 for camera in camera_list:
                     self._dg_cameras[setting.ip][camera.get_serial_number()] = camera
 
-                if len(camera_list) == 0:
-                    self._motion_queue = queue.Queue(maxsize=4)
-                else:
-                    self._motion_queue = queue.Queue(maxsize=1)
+                self._motion_queue = queue.Queue(maxsize=len(self._robot_settings))
 
                 if not self._world.scene.object_exists(setting.name):
                     self._world.scene.add(self._dg_robots[setting.name].get_robot())
@@ -259,8 +241,8 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
             #     sgp.forceLimit = 1.0e6
             #     sgp.torqueLimit = 1.0e7
             #     sgp.bendAngle = np.pi / 4
-            #     sgp.stiffness = 1.0e7
-            #     sgp.damping = 1.0e6
+            #     sgp.stiffness = 1.0e2
+            #     sgp.damping = 1.0e1
             #     sgp.retryClose = True
             #     self._gripper = Surface_Gripper()
             #     self._gripper.initialize(sgp)
@@ -316,6 +298,7 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
 
         try:
             motion: EthernetData = self._motion_queue.get_nowait()
+
             self._dg_robots[motion.robot_name].apply_action(
                 ArticulationAction(joint_positions=motion.joint_radian)
             )
@@ -327,25 +310,13 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
             #         if self._gripper_state == 1:
             #             self._gripper.close()
             #             self._console("Gripper suck")
+            #             self._ethernet_masters[motion.robot_name].set_end_di(0, 0)
 
             #         if self._gripper_state == 0:
             #             self._gripper.open()
             #             self._console("Gripper release")
             #             self._spawn_workpiece()
-
-            # === (Optional) Uncomment the code below to test the digital input and output ===
-            # if self._simulation_count % 100 == 0:
-            #     if motion.ctrl_di[3] == 0 and motion.end_di[3] == 0:
-            #         self._ethernet_masters[motion.robot_name].set_ctrl_di(3, 1)
-            #         self._ethernet_masters[motion.robot_name].set_end_di(3, 1)
-            #     else:
-            #         self._ethernet_masters[motion.robot_name].set_ctrl_di(3, 0)
-            #         self._ethernet_masters[motion.robot_name].set_end_di(3, 0)
-
-            #     print(f"ctrl_di:{motion.ctrl_di}")
-            #     print(f"ctrl_do:{motion.ctrl_do}")
-            #     print(f"end_di:{motion.end_di}")
-            #     print(f"end_do:{motion.end_do}")
+            #             self._ethernet_masters[motion.robot_name].set_end_di(0, 1)
 
             # === (Optional) Uncomment the code below to trace FPS ===
             # self._receive_count[motion.robot_name] = motion.receive_count
@@ -356,6 +327,7 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
 
         except queue.Empty:
             pass
+            # logger.warning("Motion queue is empty")
         except Exception as e:
             logger.warning(f"Failed to update robot motion: {e}, {motion}")
 
@@ -378,7 +350,6 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
                 self._ethernet_masters[robot.name].stop()
                 self._world.scene.remove_object(robot.name)
                 self._ethernet_master_threads[robot.name].join(timeout=0)
-            #     self._dg_robots[setting.name].detach_all_annotators()
 
             if self._world.physics_callback_exists("sim_step"):
                 self._world.remove_physics_callback("sim_step")
@@ -436,10 +407,6 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
         return prim.IsValid()
 
     def _spawn_workpiece(self):
-        # if not self._world.stage.GetPrimAtPath(
-        #     Sdf.Path(self._default_workpieces_prim_path)
-        # ).IsValid():
-        #     return
 
         workpieces_prim = self._world.stage.GetPrimAtPath(
             Sdf.Path(self._default_workpieces_prim_path)

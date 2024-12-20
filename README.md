@@ -1,6 +1,8 @@
-# TM Digital Robot
+# TM Digital Robot Extension for Nvidia Omniverse Isaac Sim
 
 ## Introduction
+
+**_Important:_** This extension is currently in **beta testing** and is **not intended for production use**.
 
 TM Digital Robot Extension is a robot simulation tool that allow developers control virtual robot by TMSimulation(TMflow), robot controller. Developers can easily learn how control robot motion and vision applications in the virtual environment of Isaac Sim, without the need for a physical robot. The complex communication between TMRobot and Isaac Sim has been simplified with pre-built Monition and Vision interfaces, allowing developers to avoid handling intricate integration tasks.
 
@@ -68,11 +70,10 @@ TM Digital Robot Extension is a robot simulation tool that allow developers cont
 
 -   Once you have installed the TMSimulator(TMflow), click the TMSimulator icon on the desktop to start the application, then Select Virtual Robot Type window will appear
 
-    ![](images/20241211131907.png)
-
 -   Click one of the robot types you want to simulate
+-   **IMPORTANT**: Currently, This extension only supports the following types of TM Robot S series: TM5S, TM7S, TM12S, TM14S, TM25 and TM30S
 
-    ![](images/20241211134942.png)
+    ![](images/20241220093552.png)
 
 ### Setup Communication
 

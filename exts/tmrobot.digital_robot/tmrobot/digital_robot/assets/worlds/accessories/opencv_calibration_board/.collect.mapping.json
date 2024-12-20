@@ -1,0 +1,23 @@
+{
+    "version": "1.0",
+    "file_records": [
+        {
+            "source_url": "/home/darien/projects/tm-digital-robot/exts/tmrobot.digital_robot/tmrobot/digital_robot/assets/worlds/accessories/opencv_calibration_board/opencv_chessboard.png",
+            "source_hash": "1a6ff62e64f3d030580c00e5f40aaa4472a2b4c4",
+            "target_url": "./SubUSDs/textures/opencv_chessboard.png",
+            "target_hash": "044ad523edb8cfd3eb0ecd4b0beb05b1840b1a2d"
+        },
+        {
+            "source_url": "/home/darien/.local/share/ov/pkg/isaac-sim-4.2.0/kit/mdl/core/Base/OmniSurfaceLite.mdl",
+            "source_hash": "cb0e05355e608eb06589b2aed3d0428c8b442954",
+            "target_url": "./SubUSDs/materials/OmniSurfaceLite.mdl",
+            "target_hash": "b8d5daef2670c7b24095ed2c1f4ee39d33f1c649"
+        },
+        {
+            "source_url": "omniverse://localhost/NVIDIA/Materials/Base/Plastics/Plastic.mdl",
+            "source_hash": "9f75542dd687600392231be42e8b403599dff851",
+            "target_url": "./SubUSDs/materials/Plastic.mdl",
+            "target_hash": "0d470da7a211ec3543ca92af4aaecee806aab662"
+        }
+    ]
+}
