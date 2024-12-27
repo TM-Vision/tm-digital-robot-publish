@@ -1,3 +1,3 @@
 # TM Digital Robot Extension [tmrobot.digital_robot]
 
-TM Digital Robot Extension is a robot simulation tool that allow developers control virtual robot by TMSimulation(TMflow), robot controller. Developers can easily learn how control robot motion and vision applications in the virtual environment of Isaac Sim, without the need for a physical robot. The complex communication between TMRobot and Isaac Sim has been simplified with pre-built Monition and Vision interfaces, allowing developers to avoid handling intricate integration tasks.
+TM Digital Robot Extension is a simulation tool that enables developers to control virtual robots using TMSimulation(TMflow). It simplifies robot motion and vision application learning in Isaac Sim's virtual environment, eliminating the need for a physical robot. Pre-built Motion and Vision interfaces handle complex communication between TMRobot and Isaac Sim, streamlining integration tasks.

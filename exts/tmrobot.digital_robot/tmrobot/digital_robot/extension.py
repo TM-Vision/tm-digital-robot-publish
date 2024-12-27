@@ -54,7 +54,7 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
     def initialize(self):
         # fmt: off
         # carb.settings.get_settings().set("/rtx/pathtracing/maxSamplesPerLaunch", 892778)
-        self._console(f"DEVELOPER_MODE: {const.DEVELOPER_MODE}")
+        logger.info(f"DEVELOPER_MODE: {const.DEVELOPER_MODE}")
         self._extension_setting = ExtensionSetting()
         self._models = {}
         self._virtual_camera_thread: threading.Thread = None
@@ -144,7 +144,7 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
         self._ext_ui.change_action_mode(const.BUTTON_STOP_SERVICE)
         self._ext_ui.update_message("Services started")
         self._ext_ui.collapsed_robot_settings(False)
-        self._ext_ui._on_save_scene()
+        self._ext_ui.on_save_scene()
 
         audio = omni.usd.audio.get_stage_audio_interface()
         audio.stop_all_sounds()
@@ -176,13 +176,16 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
                 self._ext_ui.collapsed_robot_settings(True)
                 return
 
-            # Check if the status of TMSimulator Ethernet Slave is Activated
+            # Check if the status of TMSimulator Ethernet Slave is Enabled
             if not self._is_service_on(setting.ip, const.PORT_ETHERNET):
-                logger.error(
+                error_message = (
                     f"Can't connect to {setting.name} Ethernet at {setting.ip}:{const.PORT_ETHERNET}, "
-                    "please check if the status of TMSimulator Ethernet Slave is Activated"
+                    "please check if the status of TMSimulator Ethernet Slave is Enabled"
                 )
+                logger.error(error_message)
+                self._ext_ui.update_message(error_message)
                 self._ext_ui.change_action_mode(const.BUTTON_START_SERVICE)
+                self._ext_ui.collapsed_robot_settings(True)
                 return
 
             # Create Digital Robots
@@ -367,7 +370,9 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
                 self._world.remove_physics_callback("sim_step")
 
             if hasattr(self, "_virtual_camera_server"):
-                self._virtual_camera_server.stop()
+                if self._virtual_camera_server is not None:
+                    self._virtual_camera_server.stop()
+
             self._stop_all_async_functions()
             self._ext_ui.change_action_mode(const.BUTTON_START_SERVICE)
             self._console("Services stopped")
