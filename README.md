@@ -14,7 +14,7 @@ TM Digital Robot Extension is a simulation tool that enables developers to contr
 
 ## Release Notes
 
-Refer to the [Release Notes](RELEASE_NOTE.md) for details.
+Refer to the [Release Notes](RELEASE_NOTES.md) for details.
 
 ## Prerequisites
 

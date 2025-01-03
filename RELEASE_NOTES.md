@@ -1,5 +1,10 @@
 # Release Notes
 
+## [2.22.4] - 2025-01-03
+
+-   Add small calibration board attached to the robot flange for up-looking calibration
+-   Add two sample cases in README.md and improve document structure
+
 ## [2.22.3] - 2024-12-27
 
 -   Add Reset button for resetting the extension as needed
