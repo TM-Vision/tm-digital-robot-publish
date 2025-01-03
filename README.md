@@ -1,4 +1,4 @@
-# TM Digital Robot Extension for Nvidia Omniverse Isaac Sim
+## TM Digital Robot Extension for NVIDIA Omniverse Isaac Sim
 
 ## Introduction
 
@@ -21,108 +21,35 @@ Refer to the [Release Notes](RELEASE_NOTE.md) for details.
 -   TMSimulator 2.22 installed on Windows 10 for TMFlow
 -   Python 3.10 installed on the PC running Isaac Sim
 -   Visual Studio Code installed on the PC running Isaac Sim
+-   Ensure the PC running Isaac Sim and TMSimulator are on the same network and using a **wired connection**. A wireless connection is not recommended due to potential instability and delays.
 
 **Note**: TMSimulator runs only on Windows 10. Isaac Sim runs on Windows 10/11 or Ubuntu 22.04.
 
-## Installation of Isaac Sim
+## Setup Guide
 
--   See the [Isaac Sim Setup Guide for Windows](SETUP_WINDOWS.md) or [Ubuntu](SETUP_UBUNTU.md) for quick installation.
--   **Troubleshooting:**
-    -   For detailed installation instructions, visit [Isaac Sim Python Environment Installation](https://docs.omniverse.nvidia.com/isaacsim/latest/installation/install_python.html).
-    -   For startup issues, check [Isaac Sim Known Issues](https://docs.omniverse.nvidia.com/isaacsim/latest/known_issues.html).
+The TM Digital Robot Extension for Isaac Sim requires the following **3 steps** to be completed:
 
-## Installation of TM Digital Robot Extension
+-   Step1: Install Isaac Sim
+    -   [For Windows](./docs/INSTALL_WINDOWS.md)
+    -   [For Ubuntu](./docs/INSTALL_UBUNTU.md)
+-   [Step2: Install TM Digital Robot Extension](./docs/INSTALL_EXTENSION.md)
+-   [Step3: Setup TMSimulator](./docs/SETUP_TMSIMULATOR.md)
 
--   Start Isaac Sim.
--   Open **Window -> Extensions** from the top menu.
--   Click the hamburger icon -> **Settings** to access **Extensions Search Paths**.
+## Play with Sample Cases
 
-    ![](images/20241211115451.png)
+Now you can run the sample cases to synchronize motion between TMRobot and Isaac Sim, please follow the steps below:
 
--   Click **Add**, input the path where TM Digital Robot Extension is cloned, and ensure it ends with **/exts**.
+-   [Case 1: Motion Synchronization](./docs/CASE01.md)
+-   [Case 2: Digital I/O with Surface Gripper](./docs/CASE02.md)
 
-    -   Example for Windows:
+## Isaac Sim Installation Troubleshooting
 
-        ![](images/20241211160922.png)
+If you encounter issues installing Isaac Sim, refer to the official link below for more information.
 
-    -   Example for Ubuntu:
+-   Hardware requirements: [Isaac Sim Hardware Requirements](https://docs.omniverse.nvidia.com/isaacsim/latest/installation/requirements.html#system-requirements)
+-   Detailed installation instructions: [Isaac Sim Python Environment Installation](https://docs.omniverse.nvidia.com/isaacsim/latest/installation/install_python.html).
+-   Startup issues: [Isaac Sim Known Issues](https://docs.omniverse.nvidia.com/isaacsim/latest/known_issues.html).
 
-        ![](images/20241211120042.png)
+## References
 
--   Go to the **THIRD PARTY** tab, find **TM Digital Robot Extension**, toggle **ENABLED**, and enable **AUTOLOAD**.
-
-    ![](images/20241211130628.png)
-
--   A new **TMRobot** menu will appear. Click **TM Digital Robot** to open the extension.
-
-    ![](images/20241211130926.png)
-
--   Drag and dock the extension to the right side for easy access.
-
-    ![](images/20241211131210.png)
-
--   Installation is complete.
-
-## Setup TMSimulator
-
--   Launch TMSimulator(TMflow) and select a robot type in the **Virtual Robot Type** window.
--   **Supported Robots**: TM5S, TM7S, TM12S, TM14S, TM25, TM30S.
-
-    ![](images/20241220093552.png)
-
-### Import Sample Project and Configure Ethernet
-
--   Copy the **TM_Export** folder to a USB named **TMROBOT**.
--   Insert the USB into the PC running TMSimulator.
--   Navigate to **gear icon -> System -> Import/Export**, then click **Import**.
-
-    ![](images/20241220163741.png)
-
--   Select **TMFLOW01** from the Robot List and click **Select**.
-
-    ![](images/20241220163539.png)
-
--   Click Import tab and then click by step below:
-
-    -   **Project -> Whole Project**: Choose **digital_robot_motion_v7.zip**.
-
-        ![](images/20241220162307.png)
-
-    -   **Configuration -> Ethernet Slave**: Choose **Transmit/digital_robot_motion**.
-
-        ![](images/20241226175538.png)
-
--   Ensure the project and Ethernet Slave are selected on the right and click **Import**.
-
-    ![](images/20241226173603.png)
-
-### Enable Ethernet Slave Communication
-
--   Go to **gear icon -> Configuration -> Communication**, then click **Ethernet Slave**.
--   Disable **Ethernet Slave**, then click **Data Table Setting**.
-
-    ![](images/20241226173731.png)
-
--   In **Data Table Setting**:
-
-    -   Click **Open** and select **digital_robot_motion**.
-    -   Set **Communication Mode** to **STRING**.
-    -   Save the settings.
-
-    ![](images/20241226174056.png)
-
--   Return to the **Communication** window, enable **Write Permission**, and toggle **Status** to **Enable**.
-
-    ![](images/20241211150426.png)
-
-### Enable Virtual Camera API
-
--   Go to **gear icon -> Configuration -> Vision Settings**, then click **Services**.
-
-    ![](images/20241211154146.png)
-
--   In **Virtual Camera API**, toggle **Status** to **Enabled**.
-
-    ![](images/20241211154258.png)
-
-Setup is now complete.
+-   [Omniverse IsaacSim Documentation](https://docs.omniverse.nvidia.com/isaacsim/latest/index.html)
