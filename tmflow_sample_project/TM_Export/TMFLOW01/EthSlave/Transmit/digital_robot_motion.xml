@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<File ID="8E8ACE7891B2541ED1556ACE84E4FCA8">
+  <Version>2</Version>
+  <FormType>TRANSMIT</FormType>
+  <CommMode>STRING</CommMode>
+  <CodeTable>
+    <Setting Item="Joint_Angle" Description="Joint 1 angle - Joint 6 angle" Type="float" Size="6" Accessibility="R" Note1="Unit: degree" WritableMode="" />
+    <Setting Item="Ctrl_DI" Description="Digital Input #?" Type="byte" Size="16" Accessibility="R/W" Note1="High: 1 Low: 0" WritableMode="M/A" />
+    <Setting Item="Ctrl_DO" Description="Digital Output #?" Type="byte" Size="16" Accessibility="R/W" Note1="High: 1 Low: 0" WritableMode="M/A" />
+    <Setting Item="End_DI" Description="End Module Digital Input #?" Type="byte" Size="4" Accessibility="R/W" Note1="High: 1 Low: 0" WritableMode="M/A" />
+    <Setting Item="End_DO" Description="End Module Digital Output #?" Type="byte" Size="4" Accessibility="R/W" Note1="High: 1 Low: 0" WritableMode="M/A" />
+  </CodeTable>
+</File>

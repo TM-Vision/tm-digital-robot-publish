@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "ms-vscode.cpptools",
+        "ms-python.vscode-pylance",
+        "tamasfe.even-better-toml",
+        "pkief.material-icon-theme",
+        "mhutchie.git-graph"
+    ]
+}
