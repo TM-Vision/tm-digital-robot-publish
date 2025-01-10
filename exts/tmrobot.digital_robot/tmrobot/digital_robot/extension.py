@@ -51,19 +51,9 @@ logger = logging.getLogger(__name__)
 viewport = vp_utils.get_active_viewport()
 
 
-class MultiStringFilter(logging.Filter):
-    def __init__(self, *strings):
-        self.strings = strings
-
-    def filter(self, record):
-        return not any(s in record.getMessage() for s in self.strings)
-
-
-class TmrobotDigital_robotExtension(omni.ext.IExt):
+class TMDigitalRobotExtension(omni.ext.IExt):
     def initialize(self):
         # fmt: off
-        # carb.settings.get_settings().set("/rtx/pathtracing/maxSamplesPerLaunch", 892778)
-        # logger.addFilter(MultiStringFilter("has corrupted data in primvar"))
         logger.info(f"DEVELOPER_MODE: {const.DEVELOPER_MODE}")
         self._extension_setting = ExtensionSetting()
         self._models = {}
@@ -292,13 +282,15 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
                     robot.name
                 ].get_robot_model()
 
+                if actual_robot_model != robot.model:
+                    robot_models_are_different.append(
+                        f"{robot.name}: Virtual Robot model {robot.model} is connect to a "
+                        f"{actual_robot_model} TMSimulator model"
+                    )
+
                 self._console(
                     f"{robot.name}({robot.model}) is connect to {robot.ip}({actual_robot_model})"
                 )
-                if actual_robot_model != robot.model:
-                    robot_models_are_different.append(
-                        f"{robot.name}: model {robot.model} is different from {actual_robot_model} you connected"
-                    )
 
                 self._ethernet_master_threads[robot.name] = threading.Thread(
                     target=self._ethernet_masters[robot.name].receive_data,
