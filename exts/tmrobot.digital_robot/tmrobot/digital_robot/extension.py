@@ -45,15 +45,16 @@ from tmrobot.digital_robot.services.virtual_camera_server import (
 from tmrobot.digital_robot.ui import constants as const  # type: ignore
 from tmrobot.digital_robot.ui.extension_ui import ExtensionUI  # type: ignore
 
+# omni.kit.app.log_deprecation("has corrupted data in primvar")
+
 logger = logging.getLogger(__name__)
 
 viewport = vp_utils.get_active_viewport()
 
 
-class TmrobotDigital_robotExtension(omni.ext.IExt):
+class TMDigitalRobotExtension(omni.ext.IExt):
     def initialize(self):
         # fmt: off
-        # carb.settings.get_settings().set("/rtx/pathtracing/maxSamplesPerLaunch", 892778)
         logger.info(f"DEVELOPER_MODE: {const.DEVELOPER_MODE}")
         self._extension_setting = ExtensionSetting()
         self._models = {}
@@ -82,6 +83,13 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
         # fmt: on
 
     def on_startup(self, ext_id):
+        # known issue: To suppress the generation of excessive logs [Info] [omni.usd.audio] resetting the animation timeline # noqa
+        omni.kit.commands.execute(
+            "ToolbarPlayFilterChecked",
+            setting_path="/app/player/audio/enabled",
+            enabled=False,
+        )
+
         self._ext_id = ext_id
         self._ext_ui = ExtensionUI(
             self._ext_id, self._on_start_service, self._on_stop_service
@@ -146,13 +154,6 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
         self._ext_ui.collapsed_robot_settings(False)
         self._ext_ui.on_save_scene()
 
-        # known issue: To suppress the generation of excessive logs [Info] [omni.usd.audio] resetting the animation timeline # noqa
-        omni.kit.commands.execute(
-            "ToolbarPlayFilterChecked",
-            setting_path="/app/player/audio/enabled",
-            enabled=False,
-        )
-
         self._simulation_count = 0
 
         if self._world.stage.GetPrimAtPath(
@@ -169,7 +170,7 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
 
             # Check if the status of TMSimulator Virtual Camera API is Activated
             echo_client = EchoClient(setting.ip)
-            if not echo_client.connectTMFlow():
+            if not echo_client.connectVirtualCameraAPI():
                 error_message = (
                     f"Can't connect to {setting.name} TMSimulator at IP: {setting.ip}, "
                     "please check if the status of TMSimulator is started and Virtual Camera API is enabled"
@@ -232,30 +233,30 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
 
             # === (Surface Gripper Example) Uncomment the code below to control the surface gripper ===
             # The example is only for the first robot Robot01 with model TM12S
-            # if self._robot_settings[0].name == const.ROBOT_LIST[0]:
-            #     sgp = Surface_Gripper_Properties()
-            #     sgp.parentPath = f"/World/{self._robot_settings[0].name}/{self._robot_settings[0].model.lower()}/body/flange_link"  # noqa
-            #     sgp.offset.p.x = 0
-            #     sgp.offset.p.z = 0.337
-            #     sgp.offset.r = [0.7071, 0, 0.7071, 0]
-            #     sgp.gripThreshold = 0.005
-            #     sgp.forceLimit = 1.0e6
-            #     sgp.torqueLimit = 1.0e7
-            #     sgp.bendAngle = np.pi / 4
-            #     sgp.stiffness = 1.0e8
-            #     sgp.damping = 1.0e1
-            #     sgp.retryClose = True
-            #     self._surface_gripper = Surface_Gripper()
-            #     self._surface_gripper.initialize(sgp)
+            if self._robot_settings[0].name == const.ROBOT_LIST[0]:
+                sgp = Surface_Gripper_Properties()
+                sgp.parentPath = f"/World/{self._robot_settings[0].name}/{self._robot_settings[0].model.lower()}/body/flange_link"  # noqa
+                sgp.offset.p.x = 0
+                sgp.offset.p.z = 0.337
+                sgp.offset.r = [0.7071, 0, 0.7071, 0]
+                sgp.gripThreshold = 0.005
+                sgp.forceLimit = 1.0e6
+                sgp.torqueLimit = 1.0e7
+                sgp.bendAngle = np.pi / 4
+                sgp.stiffness = 1.0e8
+                sgp.damping = 1.0e1
+                sgp.retryClose = True
+                self._surface_gripper = Surface_Gripper()
+                self._surface_gripper.initialize(sgp)
 
-            #     if self._is_prim_exist("/World/Accessories/sugar_box"):
-            #         omni.kit.commands.execute(
-            #             "ToggleActivePrims",
-            #             stage_or_context=omni.usd.get_context().get_stage(),
-            #             prim_paths=[Sdf.Path("/World/Accessories/sugar_box")],
-            #             active=False,
-            #         )
-            #     self._spawn_workpiece()
+                if self._is_prim_exist("/World/Accessories/sugar_box"):
+                    omni.kit.commands.execute(
+                        "ToggleActivePrims",
+                        stage_or_context=omni.usd.get_context().get_stage(),
+                        prim_paths=[Sdf.Path("/World/Accessories/sugar_box")],
+                        active=False,
+                    )
+                self._spawn_workpiece()
 
         # Play the world
         async def _play_world_async():
@@ -282,13 +283,15 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
                     robot.name
                 ].get_robot_model()
 
+                if actual_robot_model != robot.model:
+                    robot_models_are_different.append(
+                        f"{robot.name}: Virtual Robot model {robot.model} is connect to a "
+                        f"{actual_robot_model} TMSimulator model"
+                    )
+
                 self._console(
                     f"{robot.name}({robot.model}) is connect to {robot.ip}({actual_robot_model})"
                 )
-                if actual_robot_model != robot.model:
-                    robot_models_are_different.append(
-                        f"{robot.name}: model {robot.model} is different from {actual_robot_model} you connected"
-                    )
 
                 self._ethernet_master_threads[robot.name] = threading.Thread(
                     target=self._ethernet_masters[robot.name].receive_data,
@@ -323,19 +326,19 @@ class TmrobotDigital_robotExtension(omni.ext.IExt):
             )
 
             # === (Surface Gripper Example) Uncomment the code below to control the surface gripper ===
-            # if motion.robot_name == const.ROBOT_LIST[0]:
-            #     if self._surface_gripper_state != motion.ctrl_do[0]:
-            #         self._surface_gripper_state = motion.ctrl_do[0]
-            #         if self._surface_gripper_state == 1:
-            #             self._surface_gripper.close()
-            #             self._console("Surface Gripper suck")
-            #             self._ethernet_masters[motion.robot_name].set_end_di(0, 0)
+            if motion.robot_name == const.ROBOT_LIST[0]:
+                if self._surface_gripper_state != motion.ctrl_do[0]:
+                    self._surface_gripper_state = motion.ctrl_do[0]
+                    if self._surface_gripper_state == 1:
+                        self._surface_gripper.close()
+                        self._console("Surface Gripper suck")
+                        self._ethernet_masters[motion.robot_name].set_end_di(0, 0)
 
-            #         if self._surface_gripper_state == 0:
-            #             self._surface_gripper.open()
-            #             self._console("Surface Gripper release")
-            #             self._spawn_workpiece()
-            #             self._ethernet_masters[motion.robot_name].set_end_di(0, 1)
+                    if self._surface_gripper_state == 0:
+                        self._surface_gripper.open()
+                        self._console("Surface Gripper release")
+                        self._spawn_workpiece()
+                        self._ethernet_masters[motion.robot_name].set_end_di(0, 1)
 
             # === (Optional) Uncomment the code below to trace FPS ===
             # self._receive_count[motion.robot_name] = motion.receive_count

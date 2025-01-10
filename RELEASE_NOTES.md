@@ -1,5 +1,11 @@
 # Release Notes
 
+## [2.22.5] - 2025-01-10
+
+-   Update virtual camera parameters according to the specification of focal length and sensor size
+-   Add 10cm pin for up-looking calibration
+-   Hiding known issue of warnings in the console
+
 ## [2.22.4] - 2025-01-03
 
 -   Add small calibration board attached to the robot flange for up-looking calibration

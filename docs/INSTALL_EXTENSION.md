@@ -29,3 +29,7 @@
     ![](images/20241211131210.png)
 
 -   Installation is complete.
+
+## Next step
+
+-   Next, please go to [Setup TMSimulator](SETUP_TMSIMULATOR.md) for the following step

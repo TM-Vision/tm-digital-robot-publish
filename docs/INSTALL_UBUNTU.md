@@ -12,10 +12,10 @@ cd ~/projects/tm-digital-robot-publish
 -   Please checkout the latest or specific version and then create new branch for your custom development
 -   Checkout the latest version, you can use the command below
 
-```bash
-git checkout v2.22.4
-git branch v2.22.4_custom
-git checkout v2.22.4_custom
+```bashpip install --upgrade pip
+git checkout v2.22.5
+git branch v2.22.5_custom
+git checkout v2.22.5_custom
 ```
 
 ## Make sure you have Python 3.10 installed
@@ -97,6 +97,6 @@ code .
 
     ![](images/20241231165335.png)
 
-## Next steps
+## Next step
 
--   Next, please go to [Installation of TM-Digital Robot Extension](INSTALL_EXTENSION.md) for the following steps
+-   Next, please go to [Installation of TM-Digital Robot Extension](INSTALL_EXTENSION.md) for the following step
