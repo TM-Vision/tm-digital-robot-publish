@@ -9,7 +9,6 @@ import traceback
 from datetime import datetime, timezone
 from typing import List
 
-import carb  # noqa
 import numpy as np  # noqa
 import omni.kit.commands
 import omni.kit.viewport.utility as vp_utils
