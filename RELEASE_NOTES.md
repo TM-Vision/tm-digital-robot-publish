@@ -1,5 +1,10 @@
 # Release Notes
 
+## [2.22.6] - 2025-01-13
+
+-   Resolve the issue where the calibration board disappears when viewed through the EXT camera.
+-   Add a disk light to illuminate the front tier of the EXT camera.
+
 ## [2.22.5] - 2025-01-10
 
 -   Update virtual camera parameters according to the specification of focal length and sensor size

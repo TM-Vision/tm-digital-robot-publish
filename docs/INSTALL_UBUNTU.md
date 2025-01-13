@@ -13,9 +13,9 @@ cd ~/projects/tm-digital-robot-publish
 -   Checkout the latest version, you can use the command below
 
 ```bashpip install --upgrade pip
-git checkout v2.22.5
-git branch v2.22.5_custom
-git checkout v2.22.5_custom
+git checkout v2.22.6
+git branch v2.22.6_custom
+git checkout v2.22.6_custom
 ```
 
 ## Make sure you have Python 3.10 installed
