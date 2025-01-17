@@ -1,5 +1,11 @@
 # Release Notes
 
+## [2.22.7] - 2025-01-17
+
+-   Add documentation: Case 3 Collaboration Accessories
+-   Add documentation: Case 4 FOV Settings of External Camera
+-   Refine the README.md document structure
+
 ## [2.22.6] - 2025-01-13
 
 -   Resolve the issue where the calibration board disappears when viewed through the EXT camera.

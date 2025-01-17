@@ -12,10 +12,10 @@ cd ~/projects/tm-digital-robot-publish
 -   Please checkout the latest or specific version and then create new branch for your custom development
 -   Checkout the latest version, you can use the command below
 
-```bashpip install --upgrade pip
-git checkout v2.22.6
-git branch v2.22.6_custom
-git checkout v2.22.6_custom
+```bash
+git checkout v2.22.7
+git branch v2.22.7_custom
+git checkout v2.22.7_custom
 ```
 
 ## Make sure you have Python 3.10 installed

@@ -82,7 +82,7 @@ class TMDigitalRobotExtension(omni.ext.IExt):
         # fmt: on
 
     def on_startup(self, ext_id):
-        # known issue: To suppress the generation of excessive logs [Info] [omni.usd.audio] resetting the animation timeline # noqa
+
         omni.kit.commands.execute(
             "ToolbarPlayFilterChecked",
             setting_path="/app/player/audio/enabled",
@@ -158,11 +158,10 @@ class TMDigitalRobotExtension(omni.ext.IExt):
         if self._world.stage.GetPrimAtPath(
             Sdf.Path(self._default_workpieces_prim_path)
         ).IsValid():
-            # Known issue: Get warning message below when remove prim
-            # ... delegate.cpp -- Failed verification: ' prim '
             self._world.stage.RemovePrim(self._default_workpieces_prim_path)
 
         self._robot_settings = self._get_activated_robots_setting()
+
         # Check if TMSimulator services are available
         for setting in self._robot_settings:
             self._console(f"Add {setting.name} to the scene")
@@ -217,8 +216,6 @@ class TMDigitalRobotExtension(omni.ext.IExt):
             if self._world.stage.GetPrimAtPath(
                 Sdf.Path(self._default_workpieces_prim_path)
             ).IsValid():
-                # Known issue: Get warning message below when remove prim
-                # ... delegate.cpp -- Failed verification: ' prim '
                 self._world.stage.RemovePrim(self._default_workpieces_prim_path)
 
             # Create new workpiece
@@ -285,7 +282,7 @@ class TMDigitalRobotExtension(omni.ext.IExt):
                 if actual_robot_model != robot.model:
                     robot_models_are_different.append(
                         f"{robot.name}: Virtual Robot model {robot.model} is connect to a "
-                        f"{actual_robot_model} TMSimulator model"
+                        f"TMSimulator model {actual_robot_model}, which may cause unexpected behavior"
                     )
 
                 self._console(
@@ -363,8 +360,6 @@ class TMDigitalRobotExtension(omni.ext.IExt):
             if self._world.stage.GetPrimAtPath(
                 Sdf.Path(self._default_workpieces_prim_path)
             ).IsValid():
-                # Known issue: Get warning message below when remove prim
-                # ... delegate.cpp -- Failed verification: ' prim '
                 self._world.stage.RemovePrim(self._default_workpieces_prim_path)
 
             for robot in self._robot_settings:
@@ -467,8 +462,6 @@ class TMDigitalRobotExtension(omni.ext.IExt):
             Gf.Vec3f(0, 0, random.uniform(0, 360))
         )
 
-        # Known issue: Get warning message below when set rigid body
-        # path.cpp -- Ill-formed SdfPath <>: syntax error
         omni.kit.commands.execute(
             "SetRigidBody",
             path=Sdf.Path(workpiece_prim_path),
