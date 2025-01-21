@@ -54,6 +54,8 @@ Before running the sample project, you need to set up TMSimulator to communicate
 
 ## Enable Virtual Camera API
 
+**Notes**: This step is only for TMSimulator, if you are using TMFlow with a physical robot, you can skip this step.
+
 -   Go to **gear icon -> Configuration -> Vision Settings**, then click **Services**.
 
     ![](images/20241211154146.png)

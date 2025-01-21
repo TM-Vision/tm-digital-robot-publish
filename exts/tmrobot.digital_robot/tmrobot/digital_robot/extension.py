@@ -169,15 +169,16 @@ class TMDigitalRobotExtension(omni.ext.IExt):
             # Check if the status of TMSimulator Virtual Camera API is Activated
             echo_client = EchoClient(setting.ip)
             if not echo_client.connectVirtualCameraAPI():
-                error_message = (
-                    f"Can't connect to {setting.name} TMSimulator at IP: {setting.ip}, "
-                    "please check if the status of TMSimulator is started and Virtual Camera API is enabled"
+                warning_message = (
+                    f"Can't connect to {setting.name} Virtual Camera API at IP: {setting.ip}, "
+                    "please check if Virtual Camera API is enabled if you are using TMSimulator. "
+                    "You can ignore this message if you are using TMFlow with physical robot."
                 )
-                logger.error(error_message)
-                self._ext_ui.update_message(error_message)
-                self._ext_ui.change_action_mode(const.BUTTON_START_SERVICE)
-                self._ext_ui.collapsed_robot_settings(True)
-                return
+                logger.warning(warning_message)
+                self._ext_ui.update_message(warning_message)
+                # self._ext_ui.change_action_mode(const.BUTTON_START_SERVICE)
+                # self._ext_ui.collapsed_robot_settings(True)
+                # return
 
             # Check if the status of TMSimulator Ethernet Slave is Enabled
             if not self._is_service_on(setting.ip, const.PORT_ETHERNET):

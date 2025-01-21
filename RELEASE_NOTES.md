@@ -1,5 +1,10 @@
 # Release Notes
 
+## [2.22.8] - 2025-01-21
+
+-   Fixed external camera path from body to base
+-   Enabled Extension to connect to both of TMSimulator and TMFlow
+
 ## [2.22.7] - 2025-01-17
 
 -   Add documentation: Case 3 Collaboration Accessories
