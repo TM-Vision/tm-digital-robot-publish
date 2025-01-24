@@ -23,6 +23,7 @@ from omni.isaac.core.utils.stage import (
     update_stage_async,
 )
 from omni.isaac.core.utils.types import ArticulationAction
+from omni.isaac.core.utils.viewports import set_camera_view
 from omni.isaac.core.world.world import World
 from omni.isaac.surface_gripper._surface_gripper import (  # noqa
     Surface_Gripper,
@@ -44,10 +45,7 @@ from tmrobot.digital_robot.services.virtual_camera_server import (
 from tmrobot.digital_robot.ui import constants as const  # type: ignore
 from tmrobot.digital_robot.ui.extension_ui import ExtensionUI  # type: ignore
 
-# omni.kit.app.log_deprecation("has corrupted data in primvar")
-
 logger = logging.getLogger(__name__)
-
 viewport = vp_utils.get_active_viewport()
 
 
@@ -82,16 +80,12 @@ class TMDigitalRobotExtension(omni.ext.IExt):
         # fmt: on
 
     def on_startup(self, ext_id):
-
-        omni.kit.commands.execute(
-            "ToolbarPlayFilterChecked",
-            setting_path="/app/player/audio/enabled",
-            enabled=False,
-        )
-
         self._ext_id = ext_id
         self._ext_ui = ExtensionUI(
-            self._ext_id, self._on_start_service, self._on_stop_service
+            self._ext_id,
+            self._on_start_service,
+            self._on_stop_service,
+            self._change_scene_camera_position,
         )
 
         self.initialize()
@@ -143,7 +137,27 @@ class TMDigitalRobotExtension(omni.ext.IExt):
         gc.collect()
         return
 
+    def _change_scene_camera_position(self):
+        # Allow to customize the scene camera position as your need
+        omni.kit.commands.execute(
+            "ChangeProperty",
+            prop_path=Sdf.Path(f"{const.SCENE_CAMERA_PATH}.xformOp:translate"),
+            value=Gf.Vec3d(7, 4, 3),
+            prev=None,
+        )
+
+        omni.kit.commands.execute(
+            "ChangeProperty",
+            prop_path=Sdf.Path(f"{const.SCENE_CAMERA_PATH}.xformOp:orient"),
+            value=Gf.Quatd(
+                0.38,
+                Gf.Vec3d(0.30, 0.53, 0.70),
+            ),
+            prev=None,
+        )
+
     def _on_start_service(self):
+
         if not self._ext_ui.validate_form(self._world):
             return
 
@@ -337,18 +351,18 @@ class TMDigitalRobotExtension(omni.ext.IExt):
             #             self._spawn_workpiece()
             #             self._ethernet_masters[motion.robot_name].set_end_di(0, 1)
 
-            # === (Optional) Uncomment the code below to trace FPS ===
-            # self._receive_count[motion.robot_name] = motion.receive_count
-            # total_receive_count = sum(self._receive_count.values())
-            # self._console(
-            #     f"rec/sim/qsize/fps :{total_receive_count}/{self._simulation_count}/{self._motion_queue.qsize()}/{viewport.fps:.2f}"  # noqa
-            # )
-
         except queue.Empty:
             pass
             # logger.warning("Motion queue is empty")
         except Exception as e:
             logger.warning(f"Failed to update robot motion: {e}, {motion}")
+
+        # === (Optional) Uncomment the code below to trace FPS ===
+        # self._receive_count[motion.robot_name] = motion.receive_count
+        # total_receive_count = sum(self._receive_count.values())
+        # self._console(
+        #     f"rec/sim/qsize/fps :{total_receive_count}/{self._simulation_count}/{self._motion_queue.qsize()}/{viewport.fps:.2f}"  # noqa
+        # )
 
     def _on_stop_service(self):
         async def _on_stop_service_async():

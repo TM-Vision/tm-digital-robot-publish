@@ -14,20 +14,20 @@ Refer to the [Release Notes](RELEASE_NOTES.md) for details.
 
 ## Development Prerequisites
 
--   Basic knowledge of **TMFlow programming**.
+-   Basic knowledge of **TMflow programming**.
 -   Basic understanding of **Python programming**.
 -   Familiarity with **Isaac Sim** – it’s helpful to go through the [tutorials](https://docs.omniverse.nvidia.com/isaacsim/latest/introductory_tutorials/tutorial_intro_interface.html) before using the TM Digital Robot Extension.
 
 ## Setup Prerequisites
 
--   TMSimulator(TMFlow) 2.22 installed on Windows 10
+-   TM Simulator(TMflow) 2.22 installed on Windows 10
 -   Python 3.10 installed on the PC running Isaac Sim
 -   Visual Studio Code installed on the PC running Isaac Sim
--   Ensure the PC running Isaac Sim and TMSimulator are on the same network and using a **wired connection**. A wireless connection is not recommended due to potential instability and delays.
+-   Ensure the PC running Isaac Sim and TM Simulator are on the same network and using a **wired connection**. A wireless connection is not recommended due to potential instability and delays.
 
 **Notes**:
 
--   TMSimulator runs on Windows 10 only
+-   TM Simulator runs on Windows 10 only
 -   Isaac Sim runs on Windows or ubuntu, and requires a GPU. Ensure your system meets the [Hardware Requirements](https://docs.omniverse.nvidia.com/isaacsim/latest/installation/requirements.html#system-requirements), the level of "Good" is highly recommended.
 
 ## Setup Guide
@@ -38,7 +38,7 @@ The TM Digital Robot Extension for Isaac Sim requires the following steps:
     -   [For Windows](./docs/INSTALL_WINDOWS.md)
     -   [For Ubuntu](./docs/INSTALL_UBUNTU.md)
 -   [Step2: Install TM Digital Robot Extension](./docs/INSTALL_EXTENSION.md)
--   [Step3: Setup TMSimulator](./docs/SETUP_TMSIMULATOR.md)
+-   [Step3: Setup TM Simulator](./docs/SETUP_TMSIMULATOR.md)
 
 ## Play with Sample Cases
 

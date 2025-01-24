@@ -1,5 +1,11 @@
 # Release Notes
 
+## [2.22.9] - 2025-01-24
+
+-   Fixed error message: "Can't execute command: 'ChangeSetting'" on Isaac Sim startup
+-   Forced recovery of the default position of the eye-in-hand camera upon activation
+-   Added `change_scene_camera_position` function in `extension.py` to change the scene camera position
+
 ## [2.22.8] - 2025-01-21
 
 -   Fixed external camera path from body to base
