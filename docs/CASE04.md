@@ -1,4 +1,4 @@
-# FOV Settings of External Camera
+# Case4: FOV Settings of External Camera
 
 This guide explains how to configure the Field of View (FOV) settings for an external (EXT) camera in Isaac Sim, making the simulation align with real-world camera specifications.
 

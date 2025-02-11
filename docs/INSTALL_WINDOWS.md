@@ -13,9 +13,9 @@ cd %USERPROFILE%\projects\tm-digital-robot-publish
 -   Checkout the latest version, you can use the command below
 
 ```bash
-git checkout v2.22.9
-git branch v2.22.9_custom
-git checkout v2.22.9_custom
+git checkout v2.22.10
+git branch v2.22.10_custom
+git checkout v2.22.10_custom
 ```
 
 ## Make sure you have Python 3.10 installed

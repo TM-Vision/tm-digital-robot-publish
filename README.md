@@ -15,7 +15,7 @@ Refer to the [Release Notes](RELEASE_NOTES.md) for details.
 ## Development Prerequisites
 
 -   Basic knowledge of **TMflow programming**.
--   Basic understanding of **Python programming**.
+-   Basic experience of **Python programming**.
 -   Familiarity with **Isaac Sim** – it’s helpful to go through the [tutorials](https://docs.omniverse.nvidia.com/isaacsim/latest/introductory_tutorials/tutorial_intro_interface.html) before using the TM Digital Robot Extension.
 
 ## Setup Prerequisites
@@ -34,7 +34,7 @@ Refer to the [Release Notes](RELEASE_NOTES.md) for details.
 
 The TM Digital Robot Extension for Isaac Sim requires the following steps:
 
--   Step1: Install Isaac Sim
+-   Step1: Install Isaac Sim 4.2
     -   [For Windows](./docs/INSTALL_WINDOWS.md)
     -   [For Ubuntu](./docs/INSTALL_UBUNTU.md)
 -   [Step2: Install TM Digital Robot Extension](./docs/INSTALL_EXTENSION.md)
@@ -42,12 +42,13 @@ The TM Digital Robot Extension for Isaac Sim requires the following steps:
 
 ## Play with Sample Cases
 
-Run the sample cases to know how simulation works with TM Digital Robot Extension.:
+Run the sample cases to know how simulation works and usage with TM Digital Robot Extension.:
 
 -   [Case 1: Motion Synchronization](./docs/CASE01.md)
 -   [Case 2: Digital I/O with Surface Gripper](./docs/CASE02.md)
 -   [Case 3: Collaboration accessories](./docs/CASE03.md)
 -   [Case 4: FOV Settings of External Camera](./docs/CASE04.md)
+-   [Case 5: Understand the Create and Switch Scene](./docs/CASE05.md)
 
 ## Troubleshooting
 

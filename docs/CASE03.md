@@ -12,7 +12,7 @@ This case demonstrates how to activate various collaboration accessories for 2D 
 
     ![](images/20250115143638.png)
 
-## 10cm Pin
+## 10cm Pin on the desk
 
 -   Location:
 
@@ -21,6 +21,16 @@ This case demonstrates how to activate various collaboration accessories for 2D 
 -   Activation:
 
     ![](images/20250115144123.png)
+
+## 10cm Pin attached to the flank of the robot
+
+-   Location:
+
+    ![](images/20250210111302.png)
+
+-   Activation:
+
+    ![](images/20250210111350.png)
 
 ## Eye-to-Hand Camera Calibration Board
 
@@ -41,6 +51,5 @@ This case demonstrates how to activate various collaboration accessories for 2D 
     ![](images/20250115145224.png)
 
 -   Activation:
-
 
     ![](images/20250115145537.png)

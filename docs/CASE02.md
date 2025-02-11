@@ -17,10 +17,15 @@ In this case, you will learn how to control the digital I/O with a surface gripp
 -   Uncomment the two code block starting with the comment `=== (Surface Gripper Example)`. The code block should look like this:
 
     -   Code Block 1:
+        The code is about setting properties of the surface gripper, you can refer to the [TM Digital Robot Extension API](https://docs.omniverse.nvidia.com/isaacsim/latest/features/robots_simulation/ext_omni_isaac_surface_gripper.html) for more details.
 
         ![](images/20241231170250.png)
 
     -   Code Block 2:
+        The code controls a surface gripper for pick-and-place operations:
+
+        -   When Control DO port 0 is set high (1), the gripper closes, and End DI port 0 is set low (0).
+        -   When Control DO port 0 is set low (0), the gripper opens, and End DI port 0 is set high (1).
 
         ![](images/20241231170732.png)
 
@@ -72,9 +77,9 @@ In this case, you will learn how to control the digital I/O with a surface gripp
 
 -   Go to the TMSimulator and click IO tab, then you can see the digital I/O status changing when the robot is picking and placing the sugar box.
 
-    ![](images/20250103133533.png)
-
     ![](images/20250103133601.png)
+
+    ![](images/20250103133533.png)
 
 -   How the I/O changes is controlled by the code block 2 you uncommented in the extension.py file.
 

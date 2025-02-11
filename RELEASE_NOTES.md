@@ -1,5 +1,12 @@
 # Release Notes
 
+## [2.22.10] - 2025-02-11
+
+-   Fixed error message retrieval from the Ethernet slave.
+-   Added a 10cm pin on the robot's flank for calibration.
+-   Adjusted the calibration board thickness from 2mm to 1.8mm.
+-   Added Case 5: Understand the Create and Switch Scene to the documentation.
+
 ## [2.22.9] - 2025-01-24
 
 -   Fixed error message: "Can't execute command: 'ChangeSetting'" on Isaac Sim startup

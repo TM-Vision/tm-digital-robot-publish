@@ -1,22 +1,5 @@
 # Isaac Sim Installation guide for Ubuntu
 
-```bash
-sudo add-apt-repository ppa:graphics-drivers/ppa
-sudo apt update
-sudo apt install nvidia-driver-535
-sudo reboot
-nvidia-smi
-```
-
-## (Optional) If you don't have git and Python 3.10 installed
-
-```bash
-sudo apt update
-sudo apt install -y git
-sudo apt install -y python3.10 python3.10-venv
-sudo apt install -y python-is-python3
-```
-
 ## Download the TM Digital Robot Extension
 
 ```bash
@@ -30,9 +13,9 @@ cd ~/projects/tm-digital-robot-publish
 -   Checkout the latest version, you can use the command below
 
 ```bash
-git checkout v2.22.9
-git branch v2.22.9_custom
-git checkout v2.22.9_custom
+git checkout v2.22.10
+git branch v2.22.10_custom
+git checkout v2.22.10_custom
 ```
 
 ## Make sure you have Python 3.10 installed
