@@ -23,13 +23,12 @@ from omni.isaac.core.utils.stage import (
     update_stage_async,
 )
 from omni.isaac.core.utils.types import ArticulationAction
-from omni.isaac.core.utils.viewports import set_camera_view
 from omni.isaac.core.world.world import World
 from omni.isaac.surface_gripper._surface_gripper import (  # noqa
     Surface_Gripper,
     Surface_Gripper_Properties,
 )
-from pxr import Gf, Sdf, UsdGeom
+from pxr import Gf, Sdf, Usd, UsdGeom
 from tmrobot.digital_robot.models.digital_camera import DigitalCamera  # type: ignore
 from tmrobot.digital_robot.models.digital_robot import DigitalRobot  # type: ignore
 from tmrobot.digital_robot.models.setting import ExtensionSetting  # type: ignore
@@ -86,9 +85,12 @@ class TMDigitalRobotExtension(omni.ext.IExt):
             self._on_start_service,
             self._on_stop_service,
             self._change_scene_camera_position,
+            self._post_load_scene,
         )
 
         self.initialize()
+
+        # self._world.set_simulation_dt(physics_dt=1.0 / 120.0, rendering_dt=1.0 / 60.0)
 
     def on_shutdown(self):
 
@@ -138,6 +140,8 @@ class TMDigitalRobotExtension(omni.ext.IExt):
         return
 
     def _change_scene_camera_position(self):
+        print("Change scene camera position")
+
         # Allow to customize the scene camera position as your need
         omni.kit.commands.execute(
             "ChangeProperty",
@@ -157,7 +161,6 @@ class TMDigitalRobotExtension(omni.ext.IExt):
         )
 
     def _on_start_service(self):
-
         if not self._ext_ui.validate_form(self._world):
             return
 
@@ -190,9 +193,6 @@ class TMDigitalRobotExtension(omni.ext.IExt):
                 )
                 logger.warning(warning_message)
                 self._ext_ui.update_message(warning_message)
-                # self._ext_ui.change_action_mode(const.BUTTON_START_SERVICE)
-                # self._ext_ui.collapsed_robot_settings(True)
-                # return
 
             # Check if the status of TMSimulator Ethernet Slave is Enabled
             if not self._is_service_on(setting.ip, const.PORT_ETHERNET):
@@ -294,15 +294,16 @@ class TMDigitalRobotExtension(omni.ext.IExt):
                     robot.name
                 ].get_robot_model()
 
-                if actual_robot_model != robot.model:
-                    robot_models_are_different.append(
-                        f"{robot.name}: Virtual Robot model {robot.model} is connect to a "
-                        f"TMSimulator model {actual_robot_model}, which may cause unexpected behavior"
-                    )
+                if actual_robot_model in const.ROBOT_MODELS:
+                    if actual_robot_model != robot.model:
+                        robot_models_are_different.append(
+                            f"{robot.name}: Virtual Robot model {robot.model} is connect to a "
+                            f"TMSimulator/TMflow model {actual_robot_model}, which may cause unexpected behavior"
+                        )
 
-                self._console(
-                    f"{robot.name}({robot.model}) is connect to {robot.ip}({actual_robot_model})"
-                )
+                    self._console(
+                        f"{robot.name}({robot.model}) is connect to {robot.ip}({actual_robot_model})"
+                    )
 
                 self._ethernet_master_threads[robot.name] = threading.Thread(
                     target=self._ethernet_masters[robot.name].receive_data,
@@ -356,13 +357,6 @@ class TMDigitalRobotExtension(omni.ext.IExt):
             # logger.warning("Motion queue is empty")
         except Exception as e:
             logger.warning(f"Failed to update robot motion: {e}, {motion}")
-
-        # === (Optional) Uncomment the code below to trace FPS ===
-        # self._receive_count[motion.robot_name] = motion.receive_count
-        # total_receive_count = sum(self._receive_count.values())
-        # self._console(
-        #     f"rec/sim/qsize/fps :{total_receive_count}/{self._simulation_count}/{self._motion_queue.qsize()}/{viewport.fps:.2f}"  # noqa
-        # )
 
     def _on_stop_service(self):
         async def _on_stop_service_async():
@@ -445,6 +439,7 @@ class TMDigitalRobotExtension(omni.ext.IExt):
             Sdf.Path(self._default_workpieces_prim_path)
         )
 
+        # Check if the workpiece is already spawned, if yes, return
         spawn_position = self._default_workpiece_position
         for workpiece in workpieces_prim.GetChildren():
             path: str = workpiece.GetPath()
@@ -462,13 +457,14 @@ class TMDigitalRobotExtension(omni.ext.IExt):
             f"{self._default_workpieces_prim_path}/workpiece_{self._workpiece_id}"
         )
 
+        # Create a workpiece
         absolute_path = f"{const.EXTENSION_ROOT_PATH}/assets/worlds/accessories/workpiece/004_sugar_box/004_sugar_box.usd"  # noqa
-
         workpiece_prim = add_reference_to_stage(
             usd_path=absolute_path,
             prim_path=workpiece_prim_path,
         ).GetPrim()
 
+        # Place the workpiece on the table
         workpiece_prim.GetAttribute("xformOp:translate").Set(
             Gf.Vec3d(self._default_workpiece_position)
         )
@@ -485,3 +481,22 @@ class TMDigitalRobotExtension(omni.ext.IExt):
         )
 
         self._console(f"{workpiece_prim_path} is spawned")
+
+    def _get_prim_size(self, prim_path: str) -> Gf.Vec3d:
+        stage = omni.usd.get_context().get_stage()
+        bbox_cache = UsdGeom.BBoxCache(
+            Usd.TimeCode.Default(), includedPurposes=[UsdGeom.Tokens.default_]
+        )
+        bbox_cache.Clear()
+        pallet_right_prim = stage.GetPrimAtPath(Sdf.Path(prim_path))
+        prim_bbox = bbox_cache.ComputeWorldBound(pallet_right_prim)
+        prim_range = prim_bbox.ComputeAlignedRange()
+        prim_size: Gf.Vec3d = prim_range.GetSize()
+        x = round(prim_size[0], 4)
+        y = round(prim_size[1], 4)
+        z = round(prim_size[2], 4)
+        self._console(f"Prim size(Meter): x={x}, y={y}, z={z}")
+
+    def _post_load_scene(self):
+        # Do your custom actions after loading the scene
+        pass
