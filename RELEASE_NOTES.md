@@ -1,5 +1,9 @@
 # Release Notes
 
+## [2.22.11] - 2025-02-xx
+
+-   Added robot model TM6S, TM16S and TM20S.
+
 ## [2.22.10] - 2025-02-11
 
 -   Fixed error message retrieval from the Ethernet slave.

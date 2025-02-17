@@ -65,6 +65,9 @@ log.channels."omni.hydra" = "error"
 # Hiding Known Issue:[Warning] [omni.usd] Warning: in SdfPath at line 81 of /builds/omniverse/usd-ci/USD/pxr/usd/sdf/path.cpp -- Ill-formed SdfPath <>: syntax error
 log.channels."omni.usd" = "error"
 
+# Hiding Reached maximum folder subscribers count in extension folder
+log.channels."omni.ext.plugin" = "error"
+
 [[test]]
 # Extra dependencies only to be used during test run
 dependencies = [

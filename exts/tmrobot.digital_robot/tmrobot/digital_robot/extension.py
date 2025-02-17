@@ -38,8 +38,11 @@ from tmrobot.digital_robot.services.ethernet_master import EthernetData  # type:
 from tmrobot.digital_robot.services.ethernet_master import (
     EthernetMaster,  # type: ignore; type: ignore
 )
-from tmrobot.digital_robot.services.virtual_camera_server import (
-    VirtualCameraServer,  # type: ignore; type: ignore
+from tmrobot.digital_robot.services.virtual_camera_server_insecure import (  # type: ignore; type: ignore
+    VirtualCameraServerInsecure,
+)
+from tmrobot.digital_robot.services.virtual_camera_server_secure import (  # type: ignore; type: ignore
+    VirtualCameraServerSecure,
 )
 from tmrobot.digital_robot.ui import constants as const  # type: ignore
 from tmrobot.digital_robot.ui.extension_ui import ExtensionUI  # type: ignore
@@ -55,7 +58,7 @@ class TMDigitalRobotExtension(omni.ext.IExt):
         self._extension_setting = ExtensionSetting()
         self._models = {}
         self._virtual_camera_thread: threading.Thread = None
-        self._virtual_camera_server: VirtualCameraServer = None
+        self._virtual_camera_server: VirtualCameraServerSecure = None
         self._dg_robots: dict[str, DigitalRobot] = {}
         self._dg_cameras: dict[str, dict[str, DigitalCamera]] = {}  # [tmflow ip][camera name]
         self._ethernet_masters: dict[str, EthernetMaster] = {}  # [robot name]
@@ -140,7 +143,7 @@ class TMDigitalRobotExtension(omni.ext.IExt):
         return
 
     def _change_scene_camera_position(self):
-        print("Change scene camera position")
+        self._console("Change scene camera position")
 
         # Allow to customize the scene camera position as your need
         omni.kit.commands.execute(
@@ -244,30 +247,30 @@ class TMDigitalRobotExtension(omni.ext.IExt):
 
             # === (Surface Gripper Example) Uncomment the code below to control the surface gripper ===
             # The example is only for the first robot Robot01 with model TM12S
-            # if self._robot_settings[0].name == const.ROBOT_LIST[0]:
-            #     sgp = Surface_Gripper_Properties()
-            #     sgp.parentPath = f"/World/{self._robot_settings[0].name}/{self._robot_settings[0].model.lower()}/body/flange_link"  # noqa
-            #     sgp.offset.p.x = 0
-            #     sgp.offset.p.z = 0.337
-            #     sgp.offset.r = [0.7071, 0, 0.7071, 0]
-            #     sgp.gripThreshold = 0.005
-            #     sgp.forceLimit = 1.0e6
-            #     sgp.torqueLimit = 1.0e7
-            #     sgp.bendAngle = np.pi / 4
-            #     sgp.stiffness = 1.0e8
-            #     sgp.damping = 1.0e1
-            #     sgp.retryClose = True
-            #     self._surface_gripper = Surface_Gripper()
-            #     self._surface_gripper.initialize(sgp)
+            if self._robot_settings[0].name == const.ROBOT_LIST[0]:
+                sgp = Surface_Gripper_Properties()
+                sgp.parentPath = f"/World/{self._robot_settings[0].name}/{self._robot_settings[0].model.lower()}/body/flange_link"  # noqa
+                sgp.offset.p.x = 0
+                sgp.offset.p.z = 0.337
+                sgp.offset.r = [0.7071, 0, 0.7071, 0]
+                sgp.gripThreshold = 0.005
+                sgp.forceLimit = 1.0e6
+                sgp.torqueLimit = 1.0e7
+                sgp.bendAngle = np.pi / 4
+                sgp.stiffness = 1.0e8
+                sgp.damping = 1.0e1
+                sgp.retryClose = True
+                self._surface_gripper = Surface_Gripper()
+                self._surface_gripper.initialize(sgp)
 
-            #     if self._is_prim_exist("/World/Accessories/sugar_box"):
-            #         omni.kit.commands.execute(
-            #             "ToggleActivePrims",
-            #             stage_or_context=omni.usd.get_context().get_stage(),
-            #             prim_paths=[Sdf.Path("/World/Accessories/sugar_box")],
-            #             active=False,
-            #         )
-            #     self._spawn_workpiece()
+                if self._is_prim_exist("/World/Accessories/sugar_box"):
+                    omni.kit.commands.execute(
+                        "ToggleActivePrims",
+                        stage_or_context=omni.usd.get_context().get_stage(),
+                        prim_paths=[Sdf.Path("/World/Accessories/sugar_box")],
+                        active=False,
+                    )
+                self._spawn_workpiece()
 
         # Play the world
         async def _play_world_async():
@@ -316,7 +319,7 @@ class TMDigitalRobotExtension(omni.ext.IExt):
                 self._ext_ui.update_message("\n".join(robot_models_are_different))
 
         # Create Virtual Camera gRPC Server
-        self._virtual_camera_server = VirtualCameraServer(
+        self._virtual_camera_server = VirtualCameraServerSecure(
             self._set_queue, self._dg_cameras
         )
 
@@ -338,19 +341,19 @@ class TMDigitalRobotExtension(omni.ext.IExt):
             )
 
             # === (Surface Gripper Example) Uncomment the code below to control the surface gripper ===
-            # if motion.robot_name == const.ROBOT_LIST[0]:
-            #     if self._surface_gripper_state != motion.ctrl_do[0]:
-            #         self._surface_gripper_state = motion.ctrl_do[0]
-            #         if self._surface_gripper_state == 1:
-            #             self._surface_gripper.close()
-            #             self._console("Surface Gripper suck")
-            #             self._ethernet_masters[motion.robot_name].set_end_di(0, 0)
+            if motion.robot_name == const.ROBOT_LIST[0]:
+                if self._surface_gripper_state != motion.ctrl_do[0]:
+                    self._surface_gripper_state = motion.ctrl_do[0]
+                    if self._surface_gripper_state == 1:
+                        self._surface_gripper.close()
+                        self._console("Surface Gripper suck")
+                        self._ethernet_masters[motion.robot_name].set_end_di(0, 0)
 
-            #         if self._surface_gripper_state == 0:
-            #             self._surface_gripper.open()
-            #             self._console("Surface Gripper release")
-            #             self._spawn_workpiece()
-            #             self._ethernet_masters[motion.robot_name].set_end_di(0, 1)
+                    if self._surface_gripper_state == 0:
+                        self._surface_gripper.open()
+                        self._console("Surface Gripper release")
+                        self._spawn_workpiece()
+                        self._ethernet_masters[motion.robot_name].set_end_di(0, 1)
 
         except queue.Empty:
             pass
