@@ -38,9 +38,6 @@ from tmrobot.digital_robot.services.ethernet_master import EthernetData  # type:
 from tmrobot.digital_robot.services.ethernet_master import (
     EthernetMaster,  # type: ignore; type: ignore
 )
-from tmrobot.digital_robot.services.virtual_camera_server_insecure import (  # type: ignore; type: ignore
-    VirtualCameraServerInsecure,
-)
 from tmrobot.digital_robot.services.virtual_camera_server_secure import (  # type: ignore; type: ignore
     VirtualCameraServerSecure,
 )
