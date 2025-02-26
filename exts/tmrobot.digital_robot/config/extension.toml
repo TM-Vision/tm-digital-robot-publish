@@ -3,7 +3,7 @@ order = 10000
 
 [package]
 # Semantic Versioning is used: https://semver.org/
-version = "2.22.10"
+version = "2.22.11"
 
 # Lists people or organizations that are considered the "authors" of the package.
 authors = ["NVIDIA"]
@@ -59,14 +59,17 @@ log.level = "info"
 log.fileLogLevel = "info"
 log.outputStreamLevel = "info"
 
-# Hiding Known Issue: [Warning] [omni.hydra] Mesh '/World/AMR_Robot/Robot01/tm12s/body/link_1/visuals' has corrupted data in primvar
+# Hiding Known Warning: [Warning] [omni.hydra] Mesh '/World/AMR_Robot/Robot01/tm12s/body/link_1/visuals' has corrupted data in primvar
 log.channels."omni.hydra" = "error"
 
-# Hiding Known Issue:[Warning] [omni.usd] Warning: in SdfPath at line 81 of /builds/omniverse/usd-ci/USD/pxr/usd/sdf/path.cpp -- Ill-formed SdfPath <>: syntax error
+# Hiding Known Warning: [Warning] [omni.usd] Warning: in SdfPath at line 81 of /builds/omniverse/usd-ci/USD/pxr/usd/sdf/path.cpp -- Ill-formed SdfPath <>: syntax error
 log.channels."omni.usd" = "error"
 
-# Hiding Reached maximum folder subscribers count in extension folder
+# Hiding Known Warning: [Warning] Reached maximum folder subscribers count in extension folder
 log.channels."omni.ext.plugin" = "error"
+
+# Hiding Know Warning: [Warning] [omni.physx.plugin] The rigid body at /World/station_server_flying_trigger/stand_base/Robot01/tm12/body/base has a possibly invalid inertia tensor of {1.0, 1.0, 1.0} and a negative mass, small sphere approximated inertia was used. Either specify correct values in the mass properties, or add collider(s) to any shape(s) that you wish to automatically compute mass properties for.
+log.channels."omni.physx.plugin" = "error"
 
 [[test]]
 # Extra dependencies only to be used during test run

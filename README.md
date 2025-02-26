@@ -22,7 +22,7 @@ Refer to the [Release Notes](RELEASE_NOTES.md) for details.
 
 -   TM Simulator(TMflow) 2.22 installed on Windows 10
 -   Python 3.10 installed on the PC running Isaac Sim
--   Visual Studio Code installed on the PC running Isaac Sim
+-   Visual Studio Code and Git installed on the PC running Isaac Sim
 -   Ensure the PC running Isaac Sim and TM Simulator are on the same network and using a **wired connection**. A wireless connection is not recommended due to potential instability and delays.
 
 **Notes**:

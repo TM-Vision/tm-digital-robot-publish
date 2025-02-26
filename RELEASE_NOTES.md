@@ -1,8 +1,10 @@
 # Release Notes
 
-## [2.22.11] - 2025-02-xx
+## [2.22.11] - 2025-02-27
 
 -   Added robot model TM6S, TM16S and TM20S.
+-   Added gRPC secure channels for the extension (Required TMSimulator 2.22.2000 ~).
+-   Fixed hotkey disabled issue after stopping the communication.
 
 ## [2.22.10] - 2025-02-11
 
