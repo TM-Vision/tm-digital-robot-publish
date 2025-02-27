@@ -378,7 +378,7 @@ class TMDigitalRobotExtension(omni.ext.IExt):
 
             if hasattr(self, "_virtual_camera_server"):
                 if self._virtual_camera_server is not None:
-                    self._virtual_camera_server.stop()
+                    await self._virtual_camera_server.stop()
 
             # self._stop_all_async_functions()
             self._ext_ui.change_action_mode(const.BUTTON_START_SERVICE)
@@ -393,6 +393,7 @@ class TMDigitalRobotExtension(omni.ext.IExt):
                 task
                 for task in asyncio.all_tasks()
                 if task is not asyncio.current_task()
+                and task.get_coro().__name__ in ["_server_main_loop", "start"]
             ]
             for task in tasks:
                 task.cancel()
