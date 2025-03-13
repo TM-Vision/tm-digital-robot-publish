@@ -39,7 +39,7 @@ The TM Digital Robot Extension for Isaac Sim requires the following steps:
     -   [For Ubuntu](./docs/INSTALL_UBUNTU.md)
 -   [Step2: Install TM Digital Robot Extension](./docs/INSTALL_EXTENSION.md)
 -   [Step3: Setup TM Simulator](./docs/SETUP_TMSIMULATOR.md)
--   [Step4: Install Hub Workstation Cache](./docs/INSTALL_CACHE.md)
+-   [Step4: Install Cache](./docs/INSTALL_CACHE.md)
 
 ## Play with Sample Cases
 
