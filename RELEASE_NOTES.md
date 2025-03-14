@@ -3,7 +3,7 @@
 ## [2.22.12] - 2025-03-13
 
 -   Fixed issue where the virtual camera server fails to stop on shutdown.
--   Added step 4 to the setup guide for Hub Workstation Cache in the README.
+-   Added step 4 to the setup guide for installation of Cache in the README.
 
 ## [2.22.11] - 2025-02-27
 

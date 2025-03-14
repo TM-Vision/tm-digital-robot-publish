@@ -3,9 +3,9 @@
 Before running the sample project, you need to set up TMSimulator to communicate with Isaac Sim, please follow the steps below:
 
 -   Launch TMSimulator(TMflow), tick **EIH Cameras** and click one of S series robot model in the **Select Virtual Robot Type** window.
--   **Current Supported Robots**: TM5S, TM7S, TM12S, TM14S, TM25, TM30S.
+-   **Current Supported Robots**: TM5S, TM7S, TM6S, TM12S, TM14S, TM16S,TM20S, TM25 and TM30S
 
-    ![](images/20250113164246.png)
+    ![](20250314084936.png)
 
 ## Import Sample Project and Configure Ethernet
 
