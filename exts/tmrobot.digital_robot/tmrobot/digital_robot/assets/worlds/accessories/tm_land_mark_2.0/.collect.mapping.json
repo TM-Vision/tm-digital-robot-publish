@@ -1,0 +1,47 @@
+{
+    "version": "1.0",
+    "file_records": [
+        {
+            "source_url": "/home/darien/projects/tm-digital-robot/exts/tmrobot.digital_robot/tmrobot/digital_robot/assets/worlds/accessories/tm_land_mark_2.0/SubUSDs/textures/tm_landmark_2.0.png",
+            "source_hash": "6f2fa28bcdd8293f1e2806728c0432159b5b1bfb",
+            "target_url": "./SubUSDs/textures/tm_landmark_2.0.png",
+            "target_hash": "be6ed91498bd9e355b918848090a110dea5b5817"
+        },
+        {
+            "source_url": "omniverse://localhost/NVIDIA/Materials/Base/Plastics/Plastic.mdl",
+            "source_hash": "9f75542dd687600392231be42e8b403599dff851",
+            "target_url": "./SubUSDs/materials/Plastic.mdl",
+            "target_hash": "02a05eab0e5a9d61e013a675cb62b941b24fe2eb"
+        },
+        {
+            "source_url": "omniverse://localhost/NVIDIA/Materials/vMaterials_2/Plastic/Plastic_Standardized_Surface_Finish.mdl",
+            "source_hash": "ab1ada99bdffd77304cb94f8c498ff2559b5082d",
+            "target_url": "./SubUSDs/materials/Plastic_Standardized_Surface_Finish.mdl",
+            "target_hash": "95f1997f1176b1b9398f8418e17011a9744591a8"
+        },
+        {
+            "source_url": "omniverse://localhost/NVIDIA/Materials/vMaterials_2/Plastic/textures/mold_01_rough.jpg",
+            "source_hash": "840a7961cda530c40108e165561a75e1920c1c15",
+            "target_url": "./SubUSDs/textures/Plastic_Standardized_Surface_Finish/mold_01_rough.jpg",
+            "target_hash": "e7320b5f7fb250091e90411d8fcaf08303e3bb84"
+        },
+        {
+            "source_url": "omniverse://localhost/NVIDIA/Materials/vMaterials_2/Plastic/textures/mold_01_norm.jpg",
+            "source_hash": "de33b4eb21890bcdbcddf1146584bef897900a36",
+            "target_url": "./SubUSDs/textures/Plastic_Standardized_Surface_Finish/mold_01_norm.jpg",
+            "target_hash": "d782b674897840d5e4cd0581289b02110dfd65ba"
+        },
+        {
+            "source_url": "omniverse://localhost/NVIDIA/Materials/vMaterials_2/Plastic/textures/mold_45_r_rough_g_ao.jpg",
+            "source_hash": "ac561437081955187b608aedd9d29cde71151d20",
+            "target_url": "./SubUSDs/textures/Plastic_Standardized_Surface_Finish/mold_45_r_rough_g_ao.jpg",
+            "target_hash": "f67ba0d0b639b698d4aada1ea0431092ee664471"
+        },
+        {
+            "source_url": "omniverse://localhost/NVIDIA/Materials/vMaterials_2/Plastic/textures/mold_45_norm.jpg",
+            "source_hash": "fd7bbeb9df552c83d71f3cc40224daa08be336dc",
+            "target_url": "./SubUSDs/textures/Plastic_Standardized_Surface_Finish/mold_45_norm.jpg",
+            "target_hash": "efb0bbad157eade066696f3bdc789bcec416bc8d"
+        }
+    ]
+}
