@@ -1,6 +1,6 @@
 # Release Notes
 
-## [2.22.12] - 2025-03-13
+## [2.22.12] - 2025-03-14
 
 -   Fixed issue where the virtual camera server fails to stop on shutdown.
 -   Added landmark 2.0 in the default scene.
