@@ -14,8 +14,8 @@ cd ~/projects/tm-digital-robot-publish
 
 ```bash
 git checkout v2.22.12
-git branch v2.22.11_custom
-git checkout v2.22.11_custom
+git branch v2.22.12_custom
+git checkout v2.22.12_custom
 ```
 
 ## Make sure you have Python 3.10 installed
