@@ -25,8 +25,6 @@ from omni.isaac.core.utils.stage import (
 )
 from omni.isaac.core.utils.types import ArticulationAction
 from omni.isaac.core.world.world import World
-from omni.isaac.manipulators import SingleManipulator  # noqa
-from omni.isaac.manipulators.grippers import ParallelGripper  # noqa
 from omni.isaac.surface_gripper._surface_gripper import (  # noqa
     Surface_Gripper,
     Surface_Gripper_Properties,
