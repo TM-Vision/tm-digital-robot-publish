@@ -53,7 +53,6 @@ logger = logging.getLogger(__name__)
 class TMDigitalRobotExtension(omni.ext.IExt):
     def _initialize(self):
         # fmt: off
-        logger.info(f"ADVANCED_MODE: {const.ADVANCED_MODE}")
         self._extension_setting = ExtensionSetting()
         self._models = {}
         self._virtual_camera_thread: threading.Thread = None
@@ -66,11 +65,8 @@ class TMDigitalRobotExtension(omni.ext.IExt):
         self._robot_settings: List[RobotSetting] = []
         self._set_queue = queue.Queue()
         self._simulation_count = 0
-        self.is_server_right = True
-        self._fps_accumulated = 0
         self._surface_gripper_state = 0
         self._surface_gripper = None
-        self._parallel_gripper = None
         self._workpiece_id = 0
         self._world: World = World()
         self._default_workpiece_position = Gf.Vec3d(0, 0.25, 0.5155)
