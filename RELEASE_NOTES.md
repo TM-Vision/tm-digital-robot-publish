@@ -1,5 +1,9 @@
 # Release Notes
 
+## [2.22.13] - 2025-03-19
+
+-   Fixed [24358] When the digital Robot of Extension APP is activated and unchecked, all the settings of the Robot should be disabled together.
+
 ## [2.22.12] - 2025-03-14
 
 -   Fixed issue where the virtual camera server fails to stop on shutdown.
