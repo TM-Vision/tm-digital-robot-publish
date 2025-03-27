@@ -16,7 +16,7 @@ You can download the Omniverse Launcher from the [NVIDIA Omniverse for Developer
 
 ![alt text](image-1.png)
 
-After installing Cache, **CACHE NO** should appear in the top-right corner of the window.
+After installing Cache, **CACHE ON** should appear in the top-right corner of the window.
 
 ![](images/image-1.png)
 

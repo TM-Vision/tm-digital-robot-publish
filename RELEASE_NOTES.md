@@ -1,5 +1,10 @@
 # Release Notes
 
+## [2.22.14] - 2025-03-27
+
+-   Fixed if a robot already present, user can not change robot model.
+-   Added robot model TM5-900 and TM12.
+
 ## [2.22.13] - 2025-03-19
 
 -   Fixed [24358] When the digital Robot of Extension APP is activated and unchecked, all the settings of the Robot should be disabled together.
