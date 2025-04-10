@@ -1,5 +1,9 @@
 # Release Notes
 
+## [2.22.15] - 2025-04-10
+
+-   Update the document to include support for two additional robots.
+
 ## [2.22.14] - 2025-03-27
 
 -   Fixed if a robot already present, user can not change robot model.

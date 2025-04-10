@@ -49,7 +49,7 @@ Run the sample cases to know how simulation works and usage with TM Digital Robo
 -   [Case 2: Digital I/O with Surface Gripper](./docs/CASE02.md)
 -   [Case 3: Collaboration accessories](./docs/CASE03.md)
 -   [Case 4: FOV Settings of External Camera](./docs/CASE04.md)
--   [Case 5: Understand the Create and Switch Scene](./docs/CASE05.md)
+-   [Case 5: Understanding Scene Creation and Switching](./docs/CASE05.md)
 
 ## Troubleshooting
 

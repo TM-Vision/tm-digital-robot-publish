@@ -1,4 +1,4 @@
-# Case 5: Understand the Create and Switch Scene
+# Case 5: Understanding Scene Creation and Switching
 
 ## How to Create a New Scene
 
